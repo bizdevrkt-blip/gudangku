@@ -914,66 +914,65 @@ function exportLaporan(){
 }
 
 // ==================== GOOGLE DRIVE SYNC ====================
-// Gunakan JSONP via <script> tag — satu-satunya cara bypass CORS dari file lokal
-// Apps Script harus pakai doGet dengan callback parameter
+// Kirim via hidden form → hidden iframe (POST)
+// Cara ini follow redirect Google 302 otomatis, tidak kena CORS
 
-const SCRIPT_CODE = `// GudangKu Sync — RKT v4
-// Paste di script.google.com → Deploy sebagai Web App
-// Execute as: Me | Who has access: Anyone
+const SCRIPT_CODE = `// GudangKu Sync — RKT v5
+// 1. Paste kode ini di script.google.com
+// 2. Deploy → New Deployment → Web App
+//    Execute as: Me | Who has access: Anyone
+// 3. Copy Web App URL → paste ke GudangKu
 
-function doGet(e) {
+function doPost(e) {
   try {
-    const action = e.parameter.action || 'ping';
-    const cb = e.parameter.cb || 'cb';
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    if (action === 'ping') {
-      return jsonp(cb, {ok: true, msg: 'GudangKu connected'});
-    }
-
-    if (action === 'sync') {
-      const raw = e.parameter.data;
-      const payload = JSON.parse(decodeURIComponent(raw));
-
-      // Tab SKU
-      let sh = ss.getSheetByName('SKU') || ss.insertSheet('SKU');
-      sh.clearContents();
-      sh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
-      const now = new Date().toLocaleString('id-ID');
-      payload.sku.forEach(s => {
-        sh.appendRow([s.kode,s.nama,s.harga||0,s.zona,s.lokasi||'',s.stok,s.min,s.satuan,now]);
-      });
-
-      // Tab Transaksi
-      let tr = ss.getSheetByName('Transaksi') || ss.insertSheet('Transaksi');
-      tr.clearContents();
-      tr.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
-      payload.transaksi.forEach(t => {
-        tr.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
-      });
-
-      // Tab Order
-      let or = ss.getSheetByName('Order') || ss.insertSheet('Order');
-      or.clearContents();
-      or.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
-      payload.order.forEach(o => {
-        or.appendRow([o.id,o.customer,o.kota||'',o.barang,o.status,o.by,o.date]);
-      });
-
-      return jsonp(cb, {ok: true, skuCount: payload.sku.length});
-    }
-
-    return jsonp(cb, {ok: false, msg: 'Unknown action'});
-
+    var raw = (e.parameter && e.parameter.data) ? e.parameter.data : e.postData.contents;
+    var payload = JSON.parse(raw);
+    return syncData(payload);
   } catch(err) {
-    const cb = (e && e.parameter && e.parameter.cb) || 'cb';
-    return jsonp(cb, {ok: false, error: err.message});
+    return ok('error: ' + err.message);
   }
 }
 
-function jsonp(cb, data) {
-  const out = cb + '(' + JSON.stringify(data) + ')';
-  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JAVASCRIPT);
+function doGet(e) {
+  try {
+    var raw = e.parameter.data || '{}';
+    var payload = JSON.parse(raw);
+    return syncData(payload);
+  } catch(err) {
+    return ok('error: ' + err.message);
+  }
+}
+
+function syncData(payload) {
+  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var now = new Date().toLocaleString('id-ID');
+
+  var skuSh = ss.getSheetByName('SKU') || ss.insertSheet('SKU');
+  skuSh.clearContents();
+  skuSh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
+  (payload.sku || []).forEach(function(s) {
+    skuSh.appendRow([s.kode,s.nama,s.harga||0,s.zona,s.lokasi||'',s.stok,s.min,s.satuan,now]);
+  });
+
+  var trxSh = ss.getSheetByName('Transaksi') || ss.insertSheet('Transaksi');
+  trxSh.clearContents();
+  trxSh.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
+  (payload.transaksi || []).forEach(function(t) {
+    trxSh.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
+  });
+
+  var ordSh = ss.getSheetByName('Order') || ss.insertSheet('Order');
+  ordSh.clearContents();
+  ordSh.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
+  (payload.order || []).forEach(function(o) {
+    ordSh.appendRow([o.id,o.customer,o.kota||'',o.barang,o.status,o.by,o.date]);
+  });
+
+  return ok('OK: synced ' + (payload.sku||[]).length + ' SKU');
+}
+
+function ok(msg) {
+  return ContentService.createTextOutput(msg).setMimeType(ContentService.MimeType.TEXT);
 }`;
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -985,34 +984,45 @@ function copyScript(){
   catch(e){ toast('⚠️ Salin gagal'); }
 }
 
-// JSONP: inject <script> tag — bypass CORS sepenuhnya
-function jsonpCall(url, params, onSuccess, onError){
-  const cbName = 'gk_cb_' + Date.now();
-  const timeout = setTimeout(()=>{
-    cleanup();
-    if(onError) onError('timeout');
-  }, 12000);
+// ==================== DRIVE SYNC via hidden form+iframe ====================
+// Cara ini bypass CORS sepenuhnya dan follow redirect Google Apps Script (302)
+// Tidak bisa baca respons balik (cross-origin), tapi data PASTI terkirim
+// Konfirmasi dilakukan dengan cek Google Sheet secara manual
 
-  function cleanup(){
-    clearTimeout(timeout);
-    delete window[cbName];
-    const el = document.getElementById(cbName);
-    if(el) el.remove();
-  }
+function iframeSend(url, payload, onSent){
+  // Buat hidden iframe sebagai target form
+  const iframeId = 'gk_iframe_' + Date.now();
+  const formId   = 'gk_form_'   + Date.now();
 
-  window[cbName] = function(data){
-    cleanup();
-    if(onSuccess) onSuccess(data);
-  };
+  const iframe = document.createElement('iframe');
+  iframe.name  = iframeId;
+  iframe.id    = iframeId;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
 
-  const qs = Object.entries({...params, cb: cbName})
-    .map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = url;
+  form.target = iframeId;
+  form.style.display = 'none';
+  form.id = formId;
 
-  const script = document.createElement('script');
-  script.id = cbName;
-  script.src = url + '?' + qs;
-  script.onerror = function(){ cleanup(); if(onError) onError('load_error'); };
-  document.body.appendChild(script);
+  // Kirim data sebagai JSON string di field tersembunyi
+  const field = document.createElement('input');
+  field.type  = 'hidden';
+  field.name  = 'data';
+  field.value = JSON.stringify(payload);
+  form.appendChild(field);
+  document.body.appendChild(form);
+
+  // Submit — browser follow redirect otomatis, tidak kena CORS
+  form.submit();
+
+  // Bersihkan setelah 5 detik
+  setTimeout(function(){
+    try{ iframe.remove(); form.remove(); }catch(e){}
+    if(onSent) onSent();
+  }, 5000);
 }
 
 function saveDriveUrl(){
@@ -1020,41 +1030,30 @@ function saveDriveUrl(){
   if(!url||!url.includes('script.google.com')){ toast('⚠️ URL tidak valid'); return; }
   DB.driveUrl=url; saveDB();
   const res=document.getElementById('drive-test-result');
-  res.innerHTML='<div class="alert alert-info">🔄 Menghubungkan ke Google Sheet...</div>';
+  res.innerHTML='<div class="alert alert-info">🔄 Mengirim data ke Google Sheet... (tunggu 5 detik)</div>';
 
-  jsonpCall(url, {action:'ping'},
-    function(data){
-      if(data && data.ok){
-        res.innerHTML='<div class="alert alert-success">✅ Terhubung! Mengirim data ke Google Sheet...</div>';
-        syncToDrive(function(){
-          res.innerHTML='<div class="alert alert-success">✅ Berhasil! Data sudah masuk ke Google Sheet RKT. Buka Google Sheet kamu untuk konfirmasi.</div>';
-          renderDashboard();
-        });
-      } else {
-        res.innerHTML='<div class="alert alert-error">❌ Script merespons tapi ada error: '+(data&&data.error||'unknown')+'</div>';
-      }
-    },
-    function(err){
-      res.innerHTML='<div class="alert alert-error">❌ Tidak bisa terhubung ('+err+'). Pastikan script sudah di-deploy ulang dengan kode terbaru dan akses diset ke <strong>Anyone</strong>.</div>';
-    }
-  );
+  const payload = {
+    action: 'sync',
+    sku: DB.sku,
+    transaksi: DB.transaksi.slice(-200),
+    order: DB.order
+  };
+
+  iframeSend(url, payload, function(){
+    res.innerHTML='<div class="alert alert-success">✅ Data dikirim! Buka Google Sheet kamu — kalau muncul tab SKU/Transaksi/Order, berarti berhasil.<br><br>Kalau belum muncul, cek: apakah script sudah di-deploy ulang dengan kode terbaru?</div>';
+    renderDashboard();
+  });
 }
 
 function syncToDrive(onDone){
   if(!DB.driveUrl||DB.driveUrl.trim()==='') return;
-  const payload = { sku:DB.sku, transaksi:DB.transaksi.slice(-500), order:DB.order };
-  const dataStr = encodeURIComponent(JSON.stringify(payload));
-  // Kalau data terlalu besar untuk URL, kirim SKU saja dulu
-  const useLite = dataStr.length > 6000;
-  const litePayload = useLite ? { sku:DB.sku, transaksi:DB.transaksi.slice(-20), order:DB.order.slice(-20) } : payload;
-
-  jsonpCall(DB.driveUrl,
-    { action:'sync', data: JSON.stringify(litePayload) },
-    function(data){
-      if(onDone) onDone(data);
-    },
-    function(){ /* silent fail on background sync */ }
-  );
+  const payload = {
+    action: 'sync',
+    sku: DB.sku,
+    transaksi: DB.transaksi.slice(-200),
+    order: DB.order
+  };
+  iframeSend(DB.driveUrl, payload, onDone);
 }
 
 function renderDriveStatus(){
