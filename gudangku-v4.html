@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GudangKu v4 — RKT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --blue:#1a6fc4;--blue-light:#e8f2fc;--blue-dark:#0c4a8a;
+  --green:#1a8a4a;--green-light:#e6f5ee;
+  --amber:#c47a1a;--amber-light:#fdf3e3;
+  --red:#c41a1a;--red-light:#fdeaea;
+  --gray:#6b6b6b;--gray-light:#f4f4f4;--gray-border:#e0e0e0;
+  --text:#1a1a1a;--text-muted:#6b6b6b;--white:#fff;--bg:#f0f2f5;--card:#fff;
+  --radius:12px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,.10);
+  --header-h:56px;--nav-h:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;overflow-x:hidden}
+#header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--blue-dark);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100}
+#header-title{font-size:17px;font-weight:600;letter-spacing:-.3px}
+#header-sub{font-size:12px;opacity:.75;margin-top:1px}
+#header-user{font-size:13px;font-weight:500;background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;cursor:pointer}
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:#fff;border-top:1px solid var(--gray-border);display:flex;z-index:100}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding-bottom:2px}
+.nav-item.active{color:var(--blue)}.nav-item:not(.active){color:var(--text-muted)}
+.nav-icon{font-size:20px}.nav-label{font-size:10px;font-weight:500}
+#main{padding-top:calc(var(--header-h) + 12px);padding-bottom:calc(var(--nav-h) + 12px);min-height:100vh}
+.page{display:none;padding:0 12px}.page.active{display:block}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;width:100%}
+.btn:active{transform:scale(.97);opacity:.85}
+.btn-primary{background:var(--blue);color:#fff}.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--red);color:#fff}.btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.btn-gray{background:var(--gray-light);color:var(--text);border:1.5px solid var(--gray-border)}
+.btn-sm{padding:7px 14px;font-size:13px;width:auto}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.4px}
+.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);font-size:15px;background:#fff;color:var(--text);outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--blue)}
+select.form-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+textarea.form-input{resize:vertical;min-height:80px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-blue{background:var(--blue-light);color:var(--blue-dark)}.badge-green{background:var(--green-light);color:var(--green)}
+.badge-amber{background:var(--amber-light);color:var(--amber)}.badge-red{background:var(--red-light);color:var(--red)}
+.badge-gray{background:var(--gray-light);color:var(--gray)}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-card{background:#fff;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);text-align:center}
+.stat-val{font-size:28px;font-weight:800;color:var(--blue-dark);line-height:1}
+.stat-label{font-size:12px;color:var(--text-muted);margin-top:4px}
+.list-item{background:#fff;border-radius:var(--radius-sm);padding:13px 14px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer}
+.list-item-body{flex:1;min-width:0}
+.list-item-title{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.list-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-handle{width:40px;height:4px;background:var(--gray-border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:16px;font-weight:700}
+.search-box{position:relative;margin-bottom:12px}
+.search-box input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--gray-border);border-radius:10px;font-size:14px;background:#fff;outline:none}
+.search-box input:focus{border-color:var(--blue)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray);font-size:16px;pointer-events:none}
+.divider{height:1px;background:var(--gray-border);margin:14px 0}
+.alert{padding:12px 14px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;font-weight:500}
+.alert-success{background:var(--green-light);color:var(--green)}.alert-error{background:var(--red-light);color:var(--red)}
+.alert-info{background:var(--blue-light);color:var(--blue-dark)}.alert-warn{background:var(--amber-light);color:var(--amber)}
+#toast{position:fixed;bottom:calc(var(--nav-h) + 16px);left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:300;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#login-screen{position:fixed;inset:0;background:var(--blue-dark);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;padding:24px}
+#login-screen.hidden{display:none}
+.login-logo{font-size:42px;margin-bottom:8px}
+.login-title{color:#fff;font-size:26px;font-weight:800;letter-spacing:-.5px}
+.login-sub{color:rgba(255,255,255,.65);font-size:14px;margin-bottom:36px}
+.login-card{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:360px}
+.role-btn{padding:10px 8px;border:2px solid var(--gray-border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;color:var(--text-muted);background:#fff}
+.role-btn.selected{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.stock-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-border)}
+.stock-row:last-child{border-bottom:none}
+.stock-key{font-size:13px;color:var(--text-muted)}.stock-val{font-size:13px;font-weight:600}
+.qty-input{display:flex;align-items:center;gap:8px}
+.qty-btn{width:36px;height:36px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:20px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fff;color:var(--text)}
+.qty-val input{border:none;font-size:18px;font-weight:700;text-align:center;width:60px;outline:none;background:transparent}
+.log-item{padding:10px 0;border-bottom:1px solid var(--gray-border)}.log-item:last-child{border-bottom:none}
+.log-time{font-size:11px;color:var(--text-muted)}.log-text{font-size:13px;margin-top:2px}
+/* Drive setup */
+.step-box{background:var(--gray-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;margin-right:8px;flex-shrink:0}
+.step-row{display:flex;align-items:flex-start;gap:0}
+.progress-bar{height:6px;background:var(--gray-border);border-radius:3px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s}
+/* import table preview */
+.import-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.import-table th{background:var(--blue-dark);color:#fff;padding:6px 8px;text-align:left}
+.import-table td{padding:5px 8px;border-bottom:1px solid var(--gray-border)}
+.import-table tr:nth-child(even) td{background:var(--gray-light)}
+.col-select{width:100%;padding:4px 6px;border:1px solid var(--gray-border);border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">📦</div>
+  <div class="login-title">GudangKu</div>
+  <div class="login-sub">Sistem Manajemen Gudang RKT</div>
+  <div class="login-card">
+    <div class="form-group" style="margin-bottom:12px">
+      <div class="form-label">Masuk Sebagai</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px" id="role-grid">
+        <button class="role-btn selected" data-role="manager" onclick="selectRole(this)">👔 Manager</button>
+        <button class="role-btn" data-role="kepala_gudang" onclick="selectRole(this)">🏭 Kep. Gudang</button>
+        <button class="role-btn" data-role="admin" onclick="selectRole(this)">💼 Admin CS</button>
+        <button class="role-btn" data-role="sales" onclick="selectRole(this)">📊 Sales</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Password</div>
+      <input type="password" class="form-input" id="login-pass" placeholder="Masukkan password..." onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="login-error" class="alert alert-error" style="display:none"></div>
+    <button class="btn btn-primary" onclick="doLogin()">🔓 Masuk</button>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center">
+      Manager: rkt2024 &nbsp;|&nbsp; Gudang: gudang123<br>Admin: admin123 &nbsp;|&nbsp; Sales: sales123
+    </div>
+  </div>
+</div>
+
+<div id="header" style="display:none">
+  <div><div id="header-title">📦 GudangKu</div><div id="header-sub">RKT Distribution</div></div>
+  <div id="header-user" onclick="showLogout()">👤 <span id="current-user-label">-</span></div>
+</div>
+
+<div id="main" style="display:none">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val" id="st-sku">0</div><div class="stat-label">Total SKU</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-low" style="color:var(--red)">0</div><div class="stat-label">Stok Menipis</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-trx">0</div><div class="stat-label">Transaksi Hari Ini</div></div>
+      <div class="stat-card"><div class="stat-val" id="st-ord" style="color:var(--amber)">0</div><div class="stat-label">Order Pending</div></div>
+    </div>
+    <div id="drive-banner"></div>
+    <div class="card"><div class="card-title">Aktivitas Terbaru</div><div id="activity-log"><div class="alert alert-info">Belum ada aktivitas hari ini.</div></div></div>
+    <div class="card" id="low-card" style="display:none"><div class="card-title" style="color:var(--red)">⚠️ Stok Menipis</div><div id="low-list"></div></div>
+  </div>
+
+  <!-- STOK -->
+  <div class="page" id="page-stok">
+    <div class="section-header">
+      <div class="section-title">Manajemen Stok</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-gray btn-sm" id="btn-import" onclick="openModal('modal-import')">📤 Import</button>
+        <button class="btn btn-primary btn-sm" id="btn-tambah" onclick="openModal('modal-tambah-sku')">+ Tambah</button>
+      </div>
+    </div>
+    <div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Cari nama/kode barang..." id="search-stok" oninput="renderStok()"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <select class="form-input" id="filter-zona" onchange="renderStok()" style="font-size:13px">
+        <option value="">Semua Zona</option>
+        <option value="FM">Fast Moving</option><option value="MM">Medium Moving</option>
+        <option value="SM">Slow Moving</option><option value="DS">Dead Stock</option>
+      </select>
+      <select class="form-input" id="filter-stok" onchange="renderStok()" style="font-size:13px">
+        <option value="">Semua Stok</option>
+        <option value="low">Menipis</option><option value="ok">Normal</option>
+      </select>
+    </div>
+    <div id="stok-count" style="font-size:12px;color:var(--text-muted);margin-bottom:8px"></div>
+    <div id="stok-list"></div>
+  </div>
+
+  <!-- TRANSAKSI -->
+  <div class="page" id="page-transaksi">
+    <div class="section-title" style="margin-bottom:12px">Transaksi Barang</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <button class="btn btn-success" onclick="openModal('modal-masuk')">📥 Barang Masuk</button>
+      <button class="btn btn-primary" onclick="openModal('modal-keluar')">📤 Barang Keluar</button>
+    </div>
+    <div class="section-title" style="margin-bottom:8px;font-size:13px;color:var(--text-muted)">Riwayat Hari Ini</div>
+    <div id="trx-list"></div>
+  </div>
+
+  <!-- ORDER -->
+  <div class="page" id="page-order">
+    <div class="section-header">
+      <div class="section-title">Order Customer</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-order')">+ Order</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
+      <button class="btn btn-outline btn-sm" id="fo-semua" onclick="filterOrder('semua',this)">Semua</button>
+      <button class="btn btn-outline btn-sm" id="fo-pending" onclick="filterOrder('pending',this)">Pending</button>
+      <button class="btn btn-outline btn-sm" id="fo-selesai" onclick="filterOrder('selesai',this)">Selesai</button>
+    </div>
+    <div id="order-list"></div>
+  </div>
+
+  <!-- LAPORAN -->
+  <div class="page" id="page-laporan">
+    <div class="section-title" style="margin-bottom:12px">Laporan Harian</div>
+    <div class="card">
+      <div class="card-title">Ringkasan — <span id="lap-tanggal"></span></div>
+      <div class="divider" style="margin:8px 0"></div>
+      <div class="stock-row"><span class="stock-key">Barang Masuk</span><span class="stock-val" id="l-masuk">-</span></div>
+      <div class="stock-row"><span class="stock-key">Barang Keluar</span><span class="stock-val" id="l-keluar">-</span></div>
+      <div class="stock-row"><span class="stock-key">Order Baru</span><span class="stock-val" id="l-ord-baru">-</span></div>
+      <div class="stock-row"><span class="stock-key">Order Selesai</span><span class="stock-val" id="l-ord-done">-</span></div>
+      <div class="stock-row"><span class="stock-key">SKU Stok Menipis</span><span class="stock-val" id="l-low" style="color:var(--red)">-</span></div>
+    </div>
+    <div class="card"><div class="card-title">Semua Stok SKU</div><div id="l-stok"></div></div>
+    <button class="btn btn-outline" onclick="exportLaporan()">📋 Salin Laporan (WhatsApp)</button>
+
+    <!-- DRIVE SETTINGS — hanya manager -->
+    <div id="drive-settings-section" style="display:none;margin-top:16px">
+      <div class="divider"></div>
+      <div class="section-title" style="margin-bottom:10px">⚙️ Google Drive Sync</div>
+      <div class="card" id="drive-status-card"></div>
+      <button class="btn btn-outline" onclick="openModal('modal-drive-setup')">🔗 Setup / Ubah Koneksi Drive</button>
+
+      <div class="divider"></div>
+      <div class="section-title" style="margin-bottom:6px;color:var(--red)">🗑️ Reset Data</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Hanya bisa dilakukan oleh Manager. Tidak bisa dibatalkan.</div>
+      <div style="display:grid;gap:8px">
+        <button class="btn btn-outline" style="color:var(--amber);border-color:var(--amber)" onclick="openModal('modal-reset')">🗑️ Reset Daftar Barang (SKU)</button>
+        <button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="openModal('modal-reset-all')">⚠️ Reset Semua Data</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div id="bottom-nav" style="display:none">
+  <div class="nav-item active" onclick="goPage('dashboard',this)" id="nav-dashboard"><div class="nav-icon">🏠</div><div class="nav-label">Beranda</div></div>
+  <div class="nav-item" onclick="goPage('stok',this)" id="nav-stok"><div class="nav-icon">📦</div><div class="nav-label">Stok</div></div>
+  <div class="nav-item" onclick="goPage('transaksi',this)" id="nav-transaksi"><div class="nav-icon">🔄</div><div class="nav-label">Transaksi</div></div>
+  <div class="nav-item" onclick="goPage('order',this)" id="nav-order"><div class="nav-icon">📋</div><div class="nav-label">Order</div></div>
+  <div class="nav-item" onclick="goPage('laporan',this)" id="nav-laporan"><div class="nav-icon">📊</div><div class="nav-label">Laporan</div></div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- IMPORT EXCEL -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📤 Import dari Excel</div>
+    <div class="alert alert-info" style="margin-bottom:12px">File Excel kamu akan dibaca di HP ini saja — tidak dikirim ke mana-mana. Stok semua barang akan di-set ke <strong>0</strong>.</div>
+
+    <div id="import-step-1">
+      <div class="form-group">
+        <div class="form-label">Pilih File Excel (.xlsx / .xls)</div>
+        <input type="file" accept=".xlsx,.xls,.csv" id="excel-file" onchange="readExcel(this)" style="width:100%;padding:10px;border:2px dashed var(--gray-border);border-radius:8px;font-size:13px;background:var(--gray-light)">
+      </div>
+      <div id="import-preview" style="display:none">
+        <div class="card-title" style="margin-bottom:6px">Preview Data (5 baris pertama)</div>
+        <div style="overflow-x:auto"><table class="import-table" id="preview-table"></table></div>
+        <div style="margin-top:12px">
+          <div class="form-group">
+            <div class="form-label">Kolom mana yang berisi Nama Barang?</div>
+            <select class="form-input" id="col-nama"><option value="">-- Pilih kolom --</option></select>
+          </div>
+          <div class="form-group" id="col-kode-group">
+            <div class="form-label">Kolom Kode Barang (boleh kosong)</div>
+            <select class="form-input" id="col-kode"><option value="">-- Tidak ada / skip --</option></select>
+          </div>
+          <div class="form-group" id="col-harga-group">
+            <div class="form-label">Kolom Harga (boleh kosong)</div>
+            <select class="form-input" id="col-harga"><option value="">-- Tidak ada / skip --</option></select>
+          </div>
+        </div>
+        <div id="import-count" class="alert alert-success" style="display:none"></div>
+        <button class="btn btn-success" onclick="prosesImport()">✅ Import Semua Barang</button>
+        <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-import')">Batal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAMBAH SKU -->
+<div class="modal-overlay" id="modal-tambah-sku">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">+ Tambah SKU Manual</div>
+    <div class="form-group"><div class="form-label">Kode Barang</div><input type="text" class="form-input" id="sku-kode" placeholder="Cth: PLY-A02-150" style="text-transform:uppercase"></div>
+    <div class="form-group"><div class="form-label">Nama Barang</div><input type="text" class="form-input" id="sku-nama" placeholder="Cth: Pulley Tipe A 150mm"></div>
+    <div id="sku-harga-group" class="form-group"><div class="form-label">Harga (Rp)</div><input type="number" class="form-input" id="sku-harga" placeholder="0" min="0"></div>
+    <div class="form-group"><div class="form-label">Zona</div>
+      <select class="form-input" id="sku-zona">
+        <option value="FM">Fast Moving (FM)</option><option value="MM">Medium Moving (MM)</option>
+        <option value="SM">Slow Moving (SM)</option><option value="DS">Dead Stock (DS)</option>
+      </select>
+    </div>
+    <div class="form-group"><div class="form-label">Lokasi Rak</div><input type="text" class="form-input" id="sku-lokasi" placeholder="Cth: FM-A1-L2-S3" style="text-transform:uppercase"></div>
+    <div class="form-group"><div class="form-label">Stok Minimum (Reorder Point)</div><input type="number" class="form-input" id="sku-min" placeholder="5" min="0"></div>
+    <div class="form-group"><div class="form-label">Satuan</div>
+      <select class="form-input" id="sku-satuan"><option value="pcs">pcs</option><option value="set">set</option><option value="meter">meter</option><option value="kg">kg</option><option value="unit">unit</option><option value="roll">roll</option></select>
+    </div>
+    <button class="btn btn-primary" onclick="simpanSKU()">Simpan SKU</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-tambah-sku')">Batal</button>
+  </div>
+</div>
+
+<!-- BARANG MASUK -->
+<div class="modal-overlay" id="modal-masuk">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📥 Barang Masuk</div>
+    <div class="form-group"><div class="form-label">Cari & Pilih Barang</div><input type="text" class="form-input" id="masuk-search" placeholder="Ketik nama barang..." oninput="filterMasukList()" style="margin-bottom:6px"><select class="form-input" id="masuk-sku" size="4" style="height:auto;border-radius:8px"></select></div>
+    <div class="form-group"><div class="form-label">Jumlah Masuk</div>
+      <div class="qty-input"><button class="qty-btn" onclick="chQty('masuk-qty',-1)">−</button><div class="qty-val"><input type="number" id="masuk-qty" value="1" min="1"></div><button class="qty-btn" onclick="chQty('masuk-qty',1)">+</button></div>
+    </div>
+    <div class="form-group"><div class="form-label">Supplier / Sumber</div><input type="text" class="form-input" id="masuk-sumber" placeholder="Nama supplier..."></div>
+    <div class="form-group"><div class="form-label">Catatan</div><input type="text" class="form-input" id="masuk-catatan" placeholder="Opsional..."></div>
+    <button class="btn btn-success" onclick="prosesMasuk()">✅ Konfirmasi Masuk</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-masuk')">Batal</button>
+  </div>
+</div>
+
+<!-- BARANG KELUAR -->
+<div class="modal-overlay" id="modal-keluar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📤 Barang Keluar</div>
+    <div class="form-group"><div class="form-label">Cari & Pilih Barang</div><input type="text" class="form-input" id="keluar-search" placeholder="Ketik nama barang..." oninput="filterKeluarList()" style="margin-bottom:6px"><select class="form-input" id="keluar-sku" size="4" style="height:auto;border-radius:8px" onchange="showStokInfo()"></select></div>
+    <div id="stok-info" class="alert alert-info" style="display:none"></div>
+    <div class="form-group"><div class="form-label">Jumlah Keluar</div>
+      <div class="qty-input"><button class="qty-btn" onclick="chQty('keluar-qty',-1)">−</button><div class="qty-val"><input type="number" id="keluar-qty" value="1" min="1"></div><button class="qty-btn" onclick="chQty('keluar-qty',1)">+</button></div>
+    </div>
+    <div class="form-group"><div class="form-label">Customer</div><input type="text" class="form-input" id="keluar-customer" placeholder="Nama customer..."></div>
+    <div class="form-group"><div class="form-label">Catatan</div><input type="text" class="form-input" id="keluar-catatan" placeholder="Opsional..."></div>
+    <button class="btn btn-primary" onclick="prosesKeluar()">✅ Konfirmasi Keluar</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-keluar')">Batal</button>
+  </div>
+</div>
+
+<!-- BUAT ORDER -->
+<div class="modal-overlay" id="modal-order">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 Buat Order Baru</div>
+    <div class="form-group"><div class="form-label">Nama Customer</div><input type="text" class="form-input" id="ord-customer" placeholder="Nama customer..."></div>
+    <div class="form-group"><div class="form-label">Kota Tujuan</div><input type="text" class="form-input" id="ord-kota" placeholder="Cth: Makassar, Ambon, Papua..."></div>
+    <div class="form-group"><div class="form-label">Detail Barang</div><textarea class="form-input" id="ord-barang" placeholder="Cth: Pulley 150mm x5, V-Belt A55 x10..."></textarea></div>
+    <div class="form-group"><div class="form-label">Catatan Pengiriman</div><input type="text" class="form-input" id="ord-catatan" placeholder="Opsional — urgent, via JNE..."></div>
+    <button class="btn btn-primary" onclick="buatOrder()">✅ Buat Order</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-order')">Batal</button>
+  </div>
+</div>
+
+<!-- DETAIL SKU -->
+<div class="modal-overlay" id="modal-detail-sku">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="ds-nama">-</div>
+    <div class="card" style="margin:0 0 12px;box-shadow:none;border:1px solid var(--gray-border)">
+      <div class="stock-row"><span class="stock-key">Kode</span><span class="stock-val" id="ds-kode">-</span></div>
+      <div class="stock-row" id="ds-harga-row"><span class="stock-key">Harga</span><span class="stock-val" id="ds-harga">-</span></div>
+      <div class="stock-row"><span class="stock-key">Zona</span><span id="ds-zona">-</span></div>
+      <div class="stock-row"><span class="stock-key">Lokasi</span><span class="stock-val" id="ds-lokasi">-</span></div>
+      <div class="stock-row"><span class="stock-key">Stok Saat Ini</span><span class="stock-val" id="ds-stok" style="font-size:20px;color:var(--blue-dark)">-</span></div>
+      <div class="stock-row"><span class="stock-key">Stok Minimum</span><span class="stock-val" id="ds-min">-</span></div>
+    </div>
+    <div class="card-title" style="margin-bottom:8px">Riwayat Mutasi</div>
+    <div id="ds-history"></div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-success btn-sm" onclick="closeModal('modal-detail-sku');openModal('modal-masuk')">📥 Masuk</button>
+      <button class="btn btn-primary btn-sm" onclick="closeModal('modal-detail-sku');openModal('modal-keluar')">📤 Keluar</button>
+    </div>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-detail-sku')">Tutup</button>
+  </div>
+</div>
+
+<!-- DETAIL ORDER -->
+<div class="modal-overlay" id="modal-detail-order">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="do-id">-</div>
+    <div class="card" style="margin:0 0 12px;box-shadow:none;border:1px solid var(--gray-border)">
+      <div class="stock-row"><span class="stock-key">Customer</span><span class="stock-val" id="do-cust">-</span></div>
+      <div class="stock-row"><span class="stock-key">Kota</span><span class="stock-val" id="do-kota">-</span></div>
+      <div class="stock-row"><span class="stock-key">Status</span><span id="do-status">-</span></div>
+      <div class="stock-row"><span class="stock-key">Tanggal</span><span class="stock-val" id="do-tgl">-</span></div>
+      <div class="stock-row"><span class="stock-key">Oleh</span><span class="stock-val" id="do-by">-</span></div>
+    </div>
+    <div class="card-title" style="margin-bottom:6px">Barang</div>
+    <div id="do-barang" class="alert alert-info" style="margin-bottom:12px"></div>
+    <div class="card-title" style="margin-bottom:4px">Catatan</div>
+    <div id="do-catatan" style="font-size:13px;color:var(--text-muted);margin-bottom:12px"></div>
+    <div id="do-actions" style="display:grid;gap:8px"></div>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-detail-order')">Tutup</button>
+  </div>
+</div>
+
+<!-- LOGOUT -->
+<div class="modal-overlay" id="modal-logout">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👤 Akun</div>
+    <div class="alert alert-info" id="logout-info"></div>
+    <button class="btn btn-danger" onclick="doLogout()" style="margin-top:4px">🚪 Keluar</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-logout')">Batal</button>
+  </div>
+</div>
+
+<!-- GOOGLE DRIVE SETUP -->
+<div class="modal-overlay" id="modal-drive-setup">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔗 Setup Google Drive Sync</div>
+    <div class="alert alert-warn" style="margin-bottom:12px">Dengan Drive sync, semua data tersimpan di Google Sheet milik RKT. Semua HP tim yang login akan baca data yang sama secara real-time.</div>
+    
+    <div class="card-title" style="margin-bottom:8px">Cara Setup (lakukan sekali)</div>
+    
+    <div class="step-box"><div class="step-row"><span class="step-num">1</span><span style="font-size:13px">Buka <strong>script.google.com</strong> di browser komputer/HP kamu</span></div></div>
+    <div class="step-box"><div class="step-row"><span class="step-num">2</span><span style="font-size:13px">Klik <strong>New Project</strong> → hapus kode lama → paste kode di bawah → Simpan</span></div></div>
+    
+    <div style="background:#1a1a1a;color:#7ec8e3;padding:12px;border-radius:8px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:10px;overflow-x:auto" id="apps-script-code"></div>
+    <button class="btn btn-gray btn-sm" onclick="copyScript()" style="margin-bottom:10px">📋 Salin Kode</button>
+    
+    <div class="step-box"><div class="step-row"><span class="step-num">3</span><span style="font-size:13px">Klik <strong>Deploy → New Deployment → Web App</strong>. Set <em>Execute as: Me</em> dan <em>Who has access: Anyone</em>. Klik Deploy.</span></div></div>
+    <div class="step-box"><div class="step-row"><span class="step-num">4</span><span style="font-size:13px">Copy URL yang muncul, paste di bawah ini:</span></div></div>
+    
+    <div class="form-group">
+      <div class="form-label">Web App URL</div>
+      <input type="text" class="form-input" id="drive-url-input" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <button class="btn btn-primary" onclick="saveDriveUrl()">💾 Simpan & Test Koneksi</button>
+    <div id="drive-test-result" style="margin-top:8px"></div>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-drive-setup')">Tutup</button>
+  </div>
+</div>
+
+<!-- MODAL RESET SKU -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="color:var(--amber)">🗑️ Reset Daftar Barang?</div>
+    <div class="alert alert-warn">Semua SKU akan dihapus. Transaksi dan order yang sudah ada <strong>tetap tersimpan</strong>.</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Gunakan ini jika file Excel yang diimport salah dan mau upload ulang dari awal.</div>
+    <div class="form-group">
+      <div class="form-label">Ketik <strong>HAPUS SKU</strong> untuk konfirmasi</div>
+      <input type="text" class="form-input" id="confirm-reset-sku" placeholder="Ketik di sini...">
+    </div>
+    <button class="btn btn-danger" onclick="doResetSKU()">🗑️ Ya, Hapus Semua SKU</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-reset');document.getElementById('confirm-reset-sku').value=''">Batal</button>
+  </div>
+</div>
+
+<!-- MODAL RESET ALL -->
+<div class="modal-overlay" id="modal-reset-all">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="color:var(--red)">⚠️ Reset Semua Data?</div>
+    <div class="alert alert-error">SEMUA data akan terhapus permanen: SKU, transaksi, order, aktivitas. Tidak bisa dibatalkan.</div>
+    <div class="form-group" style="margin-top:12px">
+      <div class="form-label">Ketik <strong>HAPUS SEMUA</strong> untuk konfirmasi</div>
+      <input type="text" class="form-input" id="confirm-reset-all" placeholder="Ketik di sini...">
+    </div>
+    <button class="btn btn-danger" onclick="doResetAll()">⚠️ Ya, Hapus Semua Data</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-reset-all');document.getElementById('confirm-reset-all').value=''">Batal</button>
+  </div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const STORE = 'gudangku_rkt_v4';
+let DB = { sku:[], transaksi:[], order:[], activity:[], driveUrl:'' };
+let excelData = [], excelHeaders = [];
+
+function loadDB(){ try{ const s=localStorage.getItem(STORE); if(s) DB=JSON.parse(s); }catch(e){} }
+function saveDB(){ try{ localStorage.setItem(STORE,JSON.stringify(DB)); }catch(e){} }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function nowDT(){ const d=new Date(); return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
+
+// ==================== AUTH ====================
+const CREDS = { manager:'rkt2024', kepala_gudang:'gudang123', admin:'admin123', sales:'sales123' };
+const RLABELS = { manager:'Manager', kepala_gudang:'Kepala Gudang', admin:'Admin CS', sales:'Sales' };
+// canSeeHarga: manager, admin, sales dapat lihat harga. kepala_gudang tidak.
+const CAN_HARGA = ['manager','admin','sales'];
+let role = null;
+let selRole = 'manager';
+let orderFilter = 'semua';
+
+function selectRole(el){ document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); selRole=el.dataset.role; }
+
+function doLogin(){
+  const p=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  if(CREDS[selRole]===p){
+    role=selRole; err.style.display='none';
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('header').style.display='flex';
+    document.getElementById('main').style.display='block';
+    document.getElementById('bottom-nav').style.display='flex';
+    document.getElementById('current-user-label').textContent=RLABELS[role];
+    applyPerms(); goPage('dashboard',document.getElementById('nav-dashboard')); renderAll();
+  } else { err.style.display='block'; err.textContent='Password salah. Coba lagi.'; }
+}
+
+function doLogout(){ role=null; closeModal('modal-logout'); document.getElementById('login-screen').classList.remove('hidden'); ['header','main','bottom-nav'].forEach(id=>document.getElementById(id).style.display='none'); document.getElementById('login-pass').value=''; document.getElementById('login-error').style.display='none'; }
+function showLogout(){ document.getElementById('logout-info').textContent='Login sebagai: '+RLABELS[role]; openModal('modal-logout'); }
+
+function applyPerms(){
+  // Transaksi hanya manager & kepala gudang
+  const navTrx=document.getElementById('nav-transaksi');
+  navTrx.style.display=(role==='manager'||role==='kepala_gudang')?'flex':'none';
+  // Tambah SKU hanya manager
+  document.getElementById('btn-tambah').style.display=role==='manager'?'inline-flex':'none';
+  document.getElementById('btn-import').style.display=role==='manager'?'inline-flex':'none';
+  // Harga field di tambah SKU
+  const hg=document.getElementById('sku-harga-group');
+  if(hg) hg.style.display=CAN_HARGA.includes(role)?'block':'none';
+  // Drive settings hanya manager
+  const ds=document.getElementById('drive-settings-section');
+  if(ds) ds.style.display=role==='manager'?'block':'none';
+}
+
+// ==================== NAVIGATION ====================
+function goPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='laporan'){ renderLaporan(); }
+  if(name==='transaksi'){ renderTrx(); }
+  if(name==='stok'){ renderStok(); }
+  if(name==='order'){ renderOrder(orderFilter); }
+}
+
+// ==================== MODAL ====================
+function openModal(id){
+  if(id==='modal-masuk') fillSKUList('masuk-sku','masuk-search');
+  if(id==='modal-keluar'){ fillSKUList('keluar-sku','keluar-search'); document.getElementById('stok-info').style.display='none'; }
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); }));
+
+// ==================== EXCEL IMPORT ====================
+function readExcel(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(!data||data.length<2){ toast('⚠️ File kosong atau format tidak dikenal'); return; }
+      excelHeaders=data[0].map((h,i)=>h||'Kolom '+(i+1));
+      excelData=data.slice(1).filter(r=>r.some(c=>c!==''));
+      
+      // Build preview
+      const tbl=document.getElementById('preview-table');
+      const heads=excelHeaders.slice(0,8);
+      tbl.innerHTML='<thead><tr>'+heads.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+
+        excelData.slice(0,5).map(r=>'<tr>'+heads.map((_,i)=>`<td>${r[i]||''}</td>`).join('')+'</tr>').join('')+'</tbody>';
+      
+      // Fill column selectors
+      const opts='<option value="">-- Tidak ada --</option>'+excelHeaders.map((h,i)=>`<option value="${i}">${h}</option>`).join('');
+      document.getElementById('col-nama').innerHTML=opts;
+      document.getElementById('col-kode').innerHTML=opts;
+      document.getElementById('col-harga').innerHTML=opts;
+      
+      // Auto-detect common column names
+      excelHeaders.forEach((h,i)=>{
+        const lh=h.toLowerCase();
+        if(lh.includes('nama')||lh.includes('barang')||lh.includes('item')||lh.includes('produk')){ document.getElementById('col-nama').value=i; }
+        if(lh.includes('kode')||lh.includes('sku')||lh.includes('part')){ document.getElementById('col-kode').value=i; }
+        if(lh.includes('harga')||lh.includes('price')||lh.includes('hgr')){ document.getElementById('col-harga').value=i; }
+      });
+      
+      document.getElementById('import-count').style.display='block';
+      document.getElementById('import-count').textContent='✅ '+excelData.length+' baris ditemukan. Siap diimport.';
+      document.getElementById('import-preview').style.display='block';
+    }catch(err){ toast('⚠️ Gagal membaca file: '+err.message); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function prosesImport(){
+  const colNama=document.getElementById('col-nama').value;
+  const colKode=document.getElementById('col-kode').value;
+  const colHarga=document.getElementById('col-harga').value;
+  if(colNama===''){toast('⚠️ Pilih kolom Nama Barang dulu');return;}
+  
+  let added=0, skipped=0;
+  excelData.forEach((row,idx)=>{
+    const nama=String(row[parseInt(colNama)]||'').trim();
+    if(!nama){ skipped++; return; }
+    const kode=colKode!==''?String(row[parseInt(colKode)]||'').trim().toUpperCase():('IMP-'+String(idx+1).padStart(4,'0'));
+    const harga=colHarga!==''?parseFloat(String(row[parseInt(colHarga)]||'0').replace(/[^0-9.]/g,''))||0:0;
+    // skip duplikat nama
+    if(DB.sku.find(s=>s.nama.toLowerCase()===nama.toLowerCase())){ skipped++; return; }
+    DB.sku.push({ id:Date.now()+idx, kode, nama, harga, zona:'MM', lokasi:'', stok:0, min:5, satuan:'pcs', history:[] });
+    added++;
+  });
+  
+  saveDB();
+  closeModal('modal-import');
+  addActivity('Import Excel: '+added+' SKU berhasil diimport', 'success');
+  renderStok(); renderDashboard();
+  toast('✅ '+added+' SKU diimport'+( skipped?' ('+skipped+' dilewati)':''));
+  
+  // Auto-push to Drive
+  if(DB.driveUrl) syncToDrive();
+}
+
+// ==================== SKU ====================
+function simpanSKU(){
+  const kode=(document.getElementById('sku-kode').value||'').trim().toUpperCase();
+  const nama=(document.getElementById('sku-nama').value||'').trim();
+  const harga=parseFloat(document.getElementById('sku-harga').value)||0;
+  const zona=document.getElementById('sku-zona').value;
+  const lokasi=(document.getElementById('sku-lokasi').value||'').trim().toUpperCase();
+  const min=parseInt(document.getElementById('sku-min').value)||5;
+  const satuan=document.getElementById('sku-satuan').value;
+  if(!nama){toast('⚠️ Nama barang wajib diisi');return;}
+  const autoKode=kode||(zona+'-'+String(DB.sku.length+1).padStart(4,'0'));
+  if(DB.sku.find(s=>s.kode===autoKode)){toast('⚠️ Kode sudah ada');return;}
+  DB.sku.push({id:Date.now(),kode:autoKode,nama,harga,zona,lokasi,stok:0,min,satuan,history:[]});
+  saveDB();
+  closeModal('modal-tambah-sku');
+  ['sku-kode','sku-nama','sku-harga','sku-lokasi','sku-min'].forEach(id=>document.getElementById(id).value='');
+  addActivity('SKU baru: '+nama,  'success');
+  renderStok(); renderDashboard();
+  if(DB.driveUrl) syncToDrive();
+  toast('✅ SKU ditambah');
+}
+
+function renderStok(){
+  const q=(document.getElementById('search-stok').value||'').toLowerCase();
+  const zona=document.getElementById('filter-zona').value;
+  const fs=document.getElementById('filter-stok').value;
+  let items=DB.sku.filter(s=>{
+    const mq=!q||s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q);
+    const mz=!zona||s.zona===zona;
+    const ml=fs==='low'?s.stok<=s.min:fs==='ok'?s.stok>s.min:true;
+    return mq&&mz&&ml;
+  });
+  document.getElementById('stok-count').textContent=items.length+' barang ditampilkan dari '+DB.sku.length+' total SKU';
+  const el=document.getElementById('stok-list');
+  if(!items.length){el.innerHTML='<div class="alert alert-info">Tidak ada barang ditemukan.</div>';return;}
+  const canH=CAN_HARGA.includes(role);
+  el.innerHTML=items.map(s=>{
+    const low=s.stok<=s.min;
+    const zb={FM:'badge-green',MM:'badge-blue',SM:'badge-amber',DS:'badge-gray'}[s.zona]||'badge-gray';
+    const hargaStr=canH&&s.harga?'Rp '+s.harga.toLocaleString('id-ID'):'';
+    return `<div class="list-item" onclick="showDetailSKU(${s.id})">
+      <div class="list-icon" style="background:${low?'var(--red-light)':'var(--blue-light)'}">${low?'⚠️':'📦'}</div>
+      <div class="list-item-body">
+        <div class="list-item-title">${s.nama}</div>
+        <div class="list-item-sub">${s.kode}${s.lokasi?' · '+s.lokasi:''}${hargaStr?' · '+hargaStr:''}</div>
+        <div style="margin-top:4px"><span class="badge ${zb}" style="margin-right:4px">${s.zona}</span>${low?'<span class="badge badge-red">Stok Menipis</span>':''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:22px;font-weight:800;color:${low?'var(--red)':'var(--blue-dark)'}">${s.stok}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${s.satuan}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showDetailSKU(id){
+  const s=DB.sku.find(x=>x.id==id); if(!s) return;
+  document.getElementById('ds-nama').textContent=s.nama;
+  document.getElementById('ds-kode').textContent=s.kode;
+  const canH=CAN_HARGA.includes(role);
+  const hRow=document.getElementById('ds-harga-row');
+  if(canH&&s.harga){ hRow.style.display='flex'; document.getElementById('ds-harga').textContent='Rp '+s.harga.toLocaleString('id-ID'); }
+  else { hRow.style.display='none'; }
+  const zb={FM:'badge-green',MM:'badge-blue',SM:'badge-amber',DS:'badge-gray'}[s.zona]||'badge-gray';
+  document.getElementById('ds-zona').innerHTML=`<span class="badge ${zb}">${s.zona}</span>`;
+  document.getElementById('ds-lokasi').textContent=s.lokasi||'-';
+  document.getElementById('ds-stok').textContent=s.stok+' '+s.satuan;
+  document.getElementById('ds-min').textContent=s.min+' '+s.satuan;
+  const hist=s.history||[];
+  const hEl=document.getElementById('ds-history');
+  if(!hist.length) hEl.innerHTML='<div class="alert alert-info">Belum ada mutasi.</div>';
+  else hEl.innerHTML=hist.slice(0,10).map(h=>`<div class="log-item"><div class="log-time">${h.time} · ${h.by}</div><div class="log-text">${h.type==='masuk'?'📥':'📤'} <strong>${h.type==='masuk'?'+':'−'}${h.qty}</strong> — ${h.note||'-'}</div></div>`).join('');
+  openModal('modal-detail-sku');
+}
+
+// ==================== TRANSAKSI ====================
+function fillSKUList(selectId, searchId){
+  const q=(document.getElementById(searchId)?.value||'').toLowerCase();
+  const el=document.getElementById(selectId);
+  const items=DB.sku.filter(s=>!q||s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q));
+  el.innerHTML=items.map(s=>`<option value="${s.id}">${s.nama} (${s.kode}) — ${s.stok} ${s.satuan}</option>`).join('');
+}
+function filterMasukList(){ fillSKUList('masuk-sku','masuk-search'); }
+function filterKeluarList(){ fillSKUList('keluar-sku','keluar-search'); showStokInfo(); }
+function showStokInfo(){
+  const id=document.getElementById('keluar-sku').value;
+  const s=DB.sku.find(x=>x.id==id);
+  const info=document.getElementById('stok-info');
+  if(s){info.style.display='block';info.textContent='Stok tersedia: '+s.stok+' '+s.satuan;}
+  else info.style.display='none';
+}
+function chQty(id,d){ const el=document.getElementById(id); el.value=Math.max(1,(parseInt(el.value)||1)+d); }
+
+function prosesMasuk(){
+  const id=document.getElementById('masuk-sku').value;
+  const qty=parseInt(document.getElementById('masuk-qty').value)||0;
+  const sumber=(document.getElementById('masuk-sumber').value||'').trim();
+  const catatan=(document.getElementById('masuk-catatan').value||'').trim();
+  if(!id){toast('⚠️ Pilih barang dulu');return;}
+  if(qty<1){toast('⚠️ Jumlah minimal 1');return;}
+  const s=DB.sku.find(x=>x.id==id); if(!s) return;
+  s.stok+=qty;
+  s.history=s.history||[];
+  s.history.unshift({type:'masuk',qty,note:sumber||catatan||'-',by:RLABELS[role],time:nowDT()});
+  DB.transaksi.push({id:'TRX'+Date.now(),type:'masuk',skuId:id,skuNama:s.nama,qty,sumber,catatan,by:RLABELS[role],time:nowDT(),date:today()});
+  saveDB();
+  closeModal('modal-masuk');
+  ['masuk-sumber','masuk-catatan'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('masuk-qty').value=1;
+  addActivity('Masuk: '+s.nama+' +'+qty+' '+s.satuan,'success');
+  renderStok(); renderDashboard();
+  if(DB.driveUrl) syncToDrive();
+  toast('✅ +'+qty+' masuk — stok kini '+s.stok);
+}
+
+function prosesKeluar(){
+  const id=document.getElementById('keluar-sku').value;
+  const qty=parseInt(document.getElementById('keluar-qty').value)||0;
+  const cust=(document.getElementById('keluar-customer').value||'').trim();
+  const cat=(document.getElementById('keluar-catatan').value||'').trim();
+  if(!id){toast('⚠️ Pilih barang dulu');return;}
+  if(qty<1){toast('⚠️ Jumlah minimal 1');return;}
+  const s=DB.sku.find(x=>x.id==id); if(!s) return;
+  if(qty>s.stok){toast('⚠️ Stok tidak cukup! Tersedia: '+s.stok);return;}
+  s.stok-=qty;
+  s.history=s.history||[];
+  s.history.unshift({type:'keluar',qty,note:(cust||'')+(cat?' — '+cat:''),by:RLABELS[role],time:nowDT()});
+  DB.transaksi.push({id:'TRX'+Date.now(),type:'keluar',skuId:id,skuNama:s.nama,qty,customer:cust,catatan:cat,by:RLABELS[role],time:nowDT(),date:today()});
+  saveDB();
+  closeModal('modal-keluar');
+  ['keluar-customer','keluar-catatan'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('keluar-qty').value=1;
+  addActivity('Keluar: '+s.nama+' −'+qty+' → '+(cust||'?'),'info');
+  renderStok(); renderDashboard();
+  if(DB.driveUrl) syncToDrive();
+  const warn=s.stok<=s.min?' ⚠️ Stok menipis!':'';
+  toast('✅ −'+qty+' keluar. Sisa: '+s.stok+warn);
+}
+
+function renderTrx(){
+  const items=DB.transaksi.filter(t=>t.date===today()).slice().reverse();
+  const el=document.getElementById('trx-list');
+  if(!items.length){el.innerHTML='<div class="alert alert-info">Belum ada transaksi hari ini.</div>';return;}
+  el.innerHTML=items.map(t=>`<div class="list-item">
+    <div class="list-icon" style="background:${t.type==='masuk'?'var(--green-light)':'var(--blue-light)'}">${t.type==='masuk'?'📥':'📤'}</div>
+    <div class="list-item-body">
+      <div class="list-item-title">${t.skuNama}</div>
+      <div class="list-item-sub">${t.type==='masuk'?'Dari: '+(t.sumber||'-'):'Ke: '+(t.customer||'-')}</div>
+      <div class="list-item-sub">${t.time} · ${t.by}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:20px;font-weight:800;color:${t.type==='masuk'?'var(--green)':'var(--blue-dark)'}">${t.type==='masuk'?'+':'−'}${t.qty}</div>
+    </div>
+  </div>`).join('');
+}
+
+// ==================== ORDER ====================
+function buatOrder(){
+  const cust=(document.getElementById('ord-customer').value||'').trim();
+  const kota=(document.getElementById('ord-kota').value||'').trim();
+  const barang=(document.getElementById('ord-barang').value||'').trim();
+  const cat=(document.getElementById('ord-catatan').value||'').trim();
+  if(!cust||!barang){toast('⚠️ Customer dan barang wajib diisi');return;}
+  const oid='ORD-'+String(DB.order.length+1).padStart(3,'0');
+  DB.order.push({id:oid,customer:cust,kota,barang,catatan:cat,status:'pending',by:RLABELS[role],date:today(),time:nowDT()});
+  saveDB();
+  closeModal('modal-order');
+  ['ord-customer','ord-kota','ord-barang','ord-catatan'].forEach(i=>document.getElementById(i).value='');
+  addActivity('Order baru: '+oid+' — '+cust,'info');
+  renderOrder(orderFilter); renderDashboard();
+  if(DB.driveUrl) syncToDrive();
+  toast('✅ Order '+oid+' dibuat');
+}
+
+function filterOrder(f,el){
+  orderFilter=f;
+  document.querySelectorAll('#page-order .btn-outline').forEach(b=>{ b.style.background=''; b.style.color='var(--blue)'; });
+  if(el){ el.style.background='var(--blue)'; el.style.color='#fff'; }
+  renderOrder(f);
+}
+
+function renderOrder(f){
+  let items=DB.order.slice().reverse();
+  if(f!=='semua') items=items.filter(o=>o.status===f);
+  const el=document.getElementById('order-list');
+  if(!items.length){el.innerHTML='<div class="alert alert-info">Tidak ada order.</div>';return;}
+  el.innerHTML=items.map(o=>{
+    const bd=o.status==='pending'?'badge-amber':o.status==='diproses'?'badge-blue':'badge-green';
+    const lb={pending:'Pending',diproses:'Diproses',selesai:'Selesai'}[o.status]||o.status;
+    return `<div class="list-item" onclick="showDetailOrder('${o.id}')">
+      <div class="list-icon" style="background:var(--blue-light)">📋</div>
+      <div class="list-item-body">
+        <div class="list-item-title">${o.id} — ${o.customer}</div>
+        <div class="list-item-sub">${o.kota||'-'} · ${o.date}</div>
+        <div style="margin-top:4px"><span class="badge ${bd}">${lb}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showDetailOrder(id){
+  const o=DB.order.find(x=>x.id===id); if(!o) return;
+  document.getElementById('do-id').textContent=o.id;
+  document.getElementById('do-cust').textContent=o.customer;
+  document.getElementById('do-kota').textContent=o.kota||'-';
+  const bd=o.status==='pending'?'badge-amber':o.status==='diproses'?'badge-blue':'badge-green';
+  const lb={pending:'Pending',diproses:'Diproses',selesai:'Selesai'}[o.status]||o.status;
+  document.getElementById('do-status').innerHTML=`<span class="badge ${bd}">${lb}</span>`;
+  document.getElementById('do-tgl').textContent=o.date+' '+o.time;
+  document.getElementById('do-by').textContent=o.by;
+  document.getElementById('do-barang').textContent=o.barang;
+  document.getElementById('do-catatan').textContent=o.catatan||'—';
+  const acts=document.getElementById('do-actions');
+  let btns='';
+  if(role==='manager'||role==='kepala_gudang'){
+    if(o.status==='pending') btns+=`<button class="btn btn-primary" onclick="updateOrder('${o.id}','diproses')">🔄 Proses Order</button>`;
+    if(o.status==='diproses') btns+=`<button class="btn btn-success" onclick="updateOrder('${o.id}','selesai')">✅ Tandai Selesai</button>`;
+  }
+  acts.innerHTML=btns;
+  openModal('modal-detail-order');
+}
+
+function updateOrder(id,status){
+  const o=DB.order.find(x=>x.id===id); if(!o) return;
+  o.status=status;
+  saveDB();
+  closeModal('modal-detail-order');
+  const lb={diproses:'Diproses',selesai:'Selesai'}[status];
+  addActivity('Order '+id+' → '+lb+' oleh '+RLABELS[role],'success');
+  renderOrder(orderFilter); renderDashboard();
+  if(DB.driveUrl) syncToDrive();
+  toast('✅ Order '+id+' → '+lb);
+}
+
+// ==================== DASHBOARD ====================
+function addActivity(text,type){
+  DB.activity.unshift({text,type,time:nowDT(),date:today()});
+  if(DB.activity.length>100) DB.activity=DB.activity.slice(0,100);
+  saveDB(); renderDashboard();
+}
+
+function renderDashboard(){
+  const t=today();
+  document.getElementById('st-sku').textContent=DB.sku.length;
+  document.getElementById('st-low').textContent=DB.sku.filter(s=>s.stok<=s.min).length;
+  document.getElementById('st-trx').textContent=DB.transaksi.filter(x=>x.date===t).length;
+  document.getElementById('st-ord').textContent=DB.order.filter(o=>o.status==='pending').length;
+  const acts=DB.activity.filter(a=>a.date===t);
+  const aEl=document.getElementById('activity-log');
+  aEl.innerHTML=acts.length?acts.slice(0,8).map(a=>`<div class="log-item"><div class="log-time">${a.time}</div><div class="log-text">${a.text}</div></div>`).join(''):'<div class="alert alert-info">Belum ada aktivitas hari ini.</div>';
+  const lowItems=DB.sku.filter(s=>s.stok<=s.min);
+  const lc=document.getElementById('low-card');
+  if(lowItems.length){ lc.style.display='block'; document.getElementById('low-list').innerHTML=lowItems.map(s=>`<div class="stock-row"><span class="stock-key">${s.nama}</span><span class="stock-val" style="color:var(--red)">${s.stok}/${s.min} ${s.satuan}</span></div>`).join(''); }
+  else lc.style.display='none';
+  // Drive banner
+  const db=document.getElementById('drive-banner');
+  if(DB.driveUrl) db.innerHTML='<div class="alert alert-success" style="margin-bottom:12px">🔗 Drive Sync Aktif — data tersimpan di Google Sheet RKT</div>';
+  else if(role==='manager') db.innerHTML='<div class="alert alert-warn" style="margin-bottom:12px">⚠️ Drive Sync belum aktif — data hanya tersimpan di HP ini. <a onclick="goPage(\'laporan\',document.getElementById(\'nav-laporan\'))" style="color:var(--amber);font-weight:700;cursor:pointer">Setup sekarang →</a></div>';
+  else db.innerHTML='';
+}
+
+// ==================== LAPORAN ====================
+function renderLaporan(){
+  const t=today();
+  const d=new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('lap-tanggal').textContent=d;
+  const masuk=DB.transaksi.filter(x=>x.date===t&&x.type==='masuk');
+  const keluar=DB.transaksi.filter(x=>x.date===t&&x.type==='keluar');
+  const ordB=DB.order.filter(o=>o.date===t);
+  const ordD=DB.order.filter(o=>o.date===t&&o.status==='selesai');
+  const low=DB.sku.filter(s=>s.stok<=s.min);
+  document.getElementById('l-masuk').textContent=masuk.reduce((a,x)=>a+x.qty,0)+' item ('+masuk.length+' trx)';
+  document.getElementById('l-keluar').textContent=keluar.reduce((a,x)=>a+x.qty,0)+' item ('+keluar.length+' trx)';
+  document.getElementById('l-ord-baru').textContent=ordB.length;
+  document.getElementById('l-ord-done').textContent=ordD.length;
+  document.getElementById('l-low').textContent=low.length+' SKU';
+  const canH=CAN_HARGA.includes(role);
+  const sEl=document.getElementById('l-stok');
+  if(!DB.sku.length) sEl.innerHTML='<div class="alert alert-info">Belum ada SKU terdaftar.</div>';
+  else sEl.innerHTML=DB.sku.map(s=>`<div class="stock-row"><span class="stock-key">${s.nama} <span style="color:var(--text-muted);font-size:11px">${s.kode}</span>${canH&&s.harga?' <span style="color:var(--amber);font-size:11px">Rp '+s.harga.toLocaleString('id-ID')+'</span>':''}</span><span class="stock-val" style="color:${s.stok<=s.min?'var(--red)':'var(--text)'}">${s.stok} ${s.satuan}</span></div>`).join('');
+  renderDriveStatus();
+}
+
+function exportLaporan(){
+  const t=today();
+  const d=new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const masuk=DB.transaksi.filter(x=>x.date===t&&x.type==='masuk');
+  const keluar=DB.transaksi.filter(x=>x.date===t&&x.type==='keluar');
+  let txt='📦 LAPORAN HARIAN GUDANGKU — RKT\n'+d+'\n\n';
+  txt+='📥 Barang Masuk: '+masuk.reduce((a,x)=>a+x.qty,0)+' item\n';
+  txt+='📤 Barang Keluar: '+keluar.reduce((a,x)=>a+x.qty,0)+' item\n\n';
+  txt+='STOK SKU:\n';
+  DB.sku.forEach(s=>{ txt+='• '+s.nama+' ('+s.kode+'): '+s.stok+' '+s.satuan+(s.stok<=s.min?' ⚠️':'')+'\n'; });
+  const low=DB.sku.filter(s=>s.stok<=s.min);
+  if(low.length){ txt+='\n⚠️ STOK MENIPIS:\n'; low.forEach(s=>{ txt+='• '+s.nama+': '+s.stok+'/'+s.min+' '+s.satuan+'\n'; }); }
+  try{ navigator.clipboard.writeText(txt); toast('📋 Laporan disalin! Paste ke WhatsApp'); }
+  catch(e){ toast('⚠️ Salin gagal — coba manual'); }
+}
+
+// ==================== GOOGLE DRIVE SYNC ====================
+// Gunakan JSONP via <script> tag — satu-satunya cara bypass CORS dari file lokal
+// Apps Script harus pakai doGet dengan callback parameter
+
+const SCRIPT_CODE = `// GudangKu Sync — RKT v4
+// Paste di script.google.com → Deploy sebagai Web App
+// Execute as: Me | Who has access: Anyone
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action || 'ping';
+    const cb = e.parameter.cb || 'cb';
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (action === 'ping') {
+      return jsonp(cb, {ok: true, msg: 'GudangKu connected'});
+    }
+
+    if (action === 'sync') {
+      const raw = e.parameter.data;
+      const payload = JSON.parse(decodeURIComponent(raw));
+
+      // Tab SKU
+      let sh = ss.getSheetByName('SKU') || ss.insertSheet('SKU');
+      sh.clearContents();
+      sh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
+      const now = new Date().toLocaleString('id-ID');
+      payload.sku.forEach(s => {
+        sh.appendRow([s.kode,s.nama,s.harga||0,s.zona,s.lokasi||'',s.stok,s.min,s.satuan,now]);
+      });
+
+      // Tab Transaksi
+      let tr = ss.getSheetByName('Transaksi') || ss.insertSheet('Transaksi');
+      tr.clearContents();
+      tr.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
+      payload.transaksi.forEach(t => {
+        tr.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
+      });
+
+      // Tab Order
+      let or = ss.getSheetByName('Order') || ss.insertSheet('Order');
+      or.clearContents();
+      or.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
+      payload.order.forEach(o => {
+        or.appendRow([o.id,o.customer,o.kota||'',o.barang,o.status,o.by,o.date]);
+      });
+
+      return jsonp(cb, {ok: true, skuCount: payload.sku.length});
+    }
+
+    return jsonp(cb, {ok: false, msg: 'Unknown action'});
+
+  } catch(err) {
+    const cb = (e && e.parameter && e.parameter.cb) || 'cb';
+    return jsonp(cb, {ok: false, error: err.message});
+  }
+}
+
+function jsonp(cb, data) {
+  const out = cb + '(' + JSON.stringify(data) + ')';
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JAVASCRIPT);
+}`;
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('apps-script-code').textContent = SCRIPT_CODE;
+});
+
+function copyScript(){
+  try{ navigator.clipboard.writeText(SCRIPT_CODE); toast('📋 Kode disalin!'); }
+  catch(e){ toast('⚠️ Salin gagal'); }
+}
+
+// JSONP: inject <script> tag — bypass CORS sepenuhnya
+function jsonpCall(url, params, onSuccess, onError){
+  const cbName = 'gk_cb_' + Date.now();
+  const timeout = setTimeout(()=>{
+    cleanup();
+    if(onError) onError('timeout');
+  }, 12000);
+
+  function cleanup(){
+    clearTimeout(timeout);
+    delete window[cbName];
+    const el = document.getElementById(cbName);
+    if(el) el.remove();
+  }
+
+  window[cbName] = function(data){
+    cleanup();
+    if(onSuccess) onSuccess(data);
+  };
+
+  const qs = Object.entries({...params, cb: cbName})
+    .map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+
+  const script = document.createElement('script');
+  script.id = cbName;
+  script.src = url + '?' + qs;
+  script.onerror = function(){ cleanup(); if(onError) onError('load_error'); };
+  document.body.appendChild(script);
+}
+
+function saveDriveUrl(){
+  const url=(document.getElementById('drive-url-input').value||'').trim();
+  if(!url||!url.includes('script.google.com')){ toast('⚠️ URL tidak valid'); return; }
+  DB.driveUrl=url; saveDB();
+  const res=document.getElementById('drive-test-result');
+  res.innerHTML='<div class="alert alert-info">🔄 Menghubungkan ke Google Sheet...</div>';
+
+  jsonpCall(url, {action:'ping'},
+    function(data){
+      if(data && data.ok){
+        res.innerHTML='<div class="alert alert-success">✅ Terhubung! Mengirim data ke Google Sheet...</div>';
+        syncToDrive(function(){
+          res.innerHTML='<div class="alert alert-success">✅ Berhasil! Data sudah masuk ke Google Sheet RKT. Buka Google Sheet kamu untuk konfirmasi.</div>';
+          renderDashboard();
+        });
+      } else {
+        res.innerHTML='<div class="alert alert-error">❌ Script merespons tapi ada error: '+(data&&data.error||'unknown')+'</div>';
+      }
+    },
+    function(err){
+      res.innerHTML='<div class="alert alert-error">❌ Tidak bisa terhubung ('+err+'). Pastikan script sudah di-deploy ulang dengan kode terbaru dan akses diset ke <strong>Anyone</strong>.</div>';
+    }
+  );
+}
+
+function syncToDrive(onDone){
+  if(!DB.driveUrl||DB.driveUrl.trim()==='') return;
+  const payload = { sku:DB.sku, transaksi:DB.transaksi.slice(-500), order:DB.order };
+  const dataStr = encodeURIComponent(JSON.stringify(payload));
+  // Kalau data terlalu besar untuk URL, kirim SKU saja dulu
+  const useLite = dataStr.length > 6000;
+  const litePayload = useLite ? { sku:DB.sku, transaksi:DB.transaksi.slice(-20), order:DB.order.slice(-20) } : payload;
+
+  jsonpCall(DB.driveUrl,
+    { action:'sync', data: JSON.stringify(litePayload) },
+    function(data){
+      if(onDone) onDone(data);
+    },
+    function(){ /* silent fail on background sync */ }
+  );
+}
+
+function renderDriveStatus(){
+  const el=document.getElementById('drive-status-card');
+  if(!el) return;
+  if(DB.driveUrl){
+    el.innerHTML=`<div class="stock-row"><span class="stock-key">Status</span><span class="badge badge-green">Aktif</span></div>
+    <div class="stock-row"><span class="stock-key">URL</span><span class="stock-val" style="font-size:11px;word-break:break-all">${DB.driveUrl.slice(0,60)}...</span></div>
+    <button class="btn btn-success btn-sm" onclick="syncToDrive();toast('🔄 Sync dikirim ke Google Sheet!')" style="margin-top:8px">🔄 Sync Sekarang</button>`;
+  } else {
+    el.innerHTML='<div class="alert alert-warn">Belum terhubung ke Google Drive.</div>';
+  }
+}
+
+// ==================== RESET ====================
+function doResetSKU(){
+  const val=document.getElementById('confirm-reset-sku').value.trim();
+  if(val!=='HAPUS SKU'){toast('⚠️ Ketik HAPUS SKU dengan huruf besar');return;}
+  const jumlah=DB.sku.length;
+  DB.sku=[];
+  saveDB();
+  closeModal('modal-reset');
+  document.getElementById('confirm-reset-sku').value='';
+  addActivity('Reset SKU: '+jumlah+' barang dihapus oleh '+RLABELS[role],'info');
+  renderStok(); renderDashboard();
+  toast('✅ '+jumlah+' SKU dihapus. Siap import ulang.');
+}
+
+function doResetAll(){
+  const val=document.getElementById('confirm-reset-all').value.trim();
+  if(val!=='HAPUS SEMUA'){toast('⚠️ Ketik HAPUS SEMUA dengan huruf besar');return;}
+  const driveUrl=DB.driveUrl;
+  DB={ sku:[], transaksi:[], order:[], activity:[], driveUrl };
+  saveDB();
+  closeModal('modal-reset-all');
+  document.getElementById('confirm-reset-all').value='';
+  renderAll();
+  toast('✅ Semua data direset. Aplikasi bersih.');
+}
+
+// ==================== RENDER ALL ====================
+function renderAll(){ renderDashboard(); renderStok(); renderTrx(); renderOrder(orderFilter); }
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3000); }
+
+loadDB();
+</script>
+</body>
+</html>
