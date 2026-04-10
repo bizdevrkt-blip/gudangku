@@ -147,6 +147,9 @@ textarea.form-input{resize:vertical;min-height:80px}
       <div class="stat-card"><div class="stat-val" id="st-ord" style="color:var(--amber)">0</div><div class="stat-label">Order Pending</div></div>
     </div>
     <div id="drive-banner"></div>
+    <div style="margin-bottom:12px">
+      <button class="btn btn-outline" onclick="manualRefresh()">🔄 Refresh Data dari Google Sheet</button>
+    </div>
     <div class="card"><div class="card-title">Aktivitas Terbaru</div><div id="activity-log"><div class="alert alert-info">Belum ada aktivitas hari ini.</div></div></div>
     <div class="card" id="low-card" style="display:none"><div class="card-title" style="color:var(--red)">⚠️ Stok Menipis</div><div id="low-list"></div></div>
   </div>
@@ -516,15 +519,13 @@ function doLogin(){
     applyPerms();
     goPage('dashboard',document.getElementById('nav-dashboard'));
     renderAll();
-    // Auto-pull dari Drive saat login — semua role
-    if(DB.driveUrl){
-      toast('🔄 Memuat data terbaru...');
-      pullFromDrive(function(ok, reason){
-        if(ok) toast('✅ Data diperbarui dari Google Sheet');
-        else if(reason==='empty') toast('ℹ️ Belum ada data di Google Sheet');
-        // kalau gagal, diam saja — pakai data lokal
-      });
-    }
+    // Pull data terbaru dari Google Sheet saat login
+    toast('🔄 Memuat data dari Google Sheet...');
+    pullFromDrive(function(ok, val){
+      if(ok) toast('✅ ' + val + ' SKU dimuat dari Google Sheet');
+      else if(val==='empty') toast('ℹ️ Google Sheet belum ada data SKU');
+      else toast('⚠️ Pakai data lokal — Sheet tidak terjangkau');
+    });
   } else { err.style.display='block'; err.textContent='Password salah. Coba lagi.'; }
 }
 
@@ -1147,30 +1148,30 @@ function doResetAll(){
 }
 
 // ==================== PULL FROM DRIVE ====================
+// Google Sheet = sumber kebenaran. Pull saat login dan saat refresh manual.
+function manualRefresh(){
+  toast('🔄 Mengambil data terbaru...');
+  pullFromDrive(function(ok, val){
+    if(ok) toast('✅ ' + val + ' SKU diperbarui dari Google Sheet');
+    else if(val==='empty') toast('ℹ️ Google Sheet belum ada data SKU');
+    else toast('⚠️ Gagal terhubung — cek koneksi internet');
+  });
+}
 function pullFromDrive(onDone){
-  if(!DB.driveUrl||DB.driveUrl.trim()===''){
-    if(onDone) onDone(false,'no_url');
-    return;
-  }
-  // Baca data dari Google Sheet via Apps Script doGet?action=read
-  const url = DB.driveUrl + '?type=read&cb=gk_pull_' + Date.now();
-  // Pakai fetch dengan mode cors dulu — kalau gagal, skip
+  if(!DB.driveUrl) { if(onDone) onDone(false,'no_url'); return; }
   fetch(DB.driveUrl + '?type=read', { method:'GET' })
-    .then(r => r.json())
-    .then(data => {
-      if(data && data.sku && data.sku.length > 0){
-        // Merge: ambil data dari sheet, simpan ke lokal
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data && data.ok && data.sku && data.sku.length > 0){
         DB.sku = data.sku;
-        if(data.transaksi) DB.transaksi = data.transaksi;
-        if(data.order) DB.order = data.order;
         saveDB();
         renderAll();
-        if(onDone) onDone(true);
+        if(onDone) onDone(true, data.sku.length);
       } else {
-        if(onDone) onDone(false, 'empty');
+        if(onDone) onDone(false,'empty');
       }
     })
-    .catch(() => { if(onDone) onDone(false,'fetch_error'); });
+    .catch(function(){ if(onDone) onDone(false,'error'); });
 }
 
 // ==================== RENDER ALL ====================
