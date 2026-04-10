@@ -1045,10 +1045,11 @@ function copyScript(){
 // Data dikirim sebagai URL parameter, batch per 50 SKU kalau banyak
 
 function gaSend(url, payload, onDone){
-  const json = encodeURIComponent(JSON.stringify(payload));
-  const fullUrl = url + '?data=' + json;
-  // Gunakan no-cors fetch — request terkirim, respons tidak bisa dibaca (cross-origin)
-  // Tapi data PASTI sampai ke Apps Script
+  // Pisah 'type' ke URL param tersendiri, data sisanya
+  const type = payload.type || 'ping';
+  const dataObj = Object.assign({}, payload);
+  delete dataObj.type;
+  const fullUrl = url + '?type=' + type + '&data=' + encodeURIComponent(JSON.stringify(dataObj));
   fetch(fullUrl, { method:'GET', mode:'no-cors' })
     .then(function(){ if(onDone) onDone(true); })
     .catch(function(){ if(onDone) onDone(false); });
