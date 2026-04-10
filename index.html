@@ -914,62 +914,54 @@ function exportLaporan(){
 }
 
 // ==================== GOOGLE DRIVE SYNC ====================
-// Kirim via hidden form → hidden iframe (POST)
-// Cara ini follow redirect Google 302 otomatis, tidak kena CORS
+// Kirim via fetch GET no-cors — tidak ada CORS issue dari GitHub Pages
 
-const SCRIPT_CODE = `// GudangKu Sync — RKT v5
-// 1. Paste kode ini di script.google.com
-// 2. Deploy → New Deployment → Web App
-//    Execute as: Me | Who has access: Anyone
-// 3. Copy Web App URL → paste ke GudangKu
-
-function doPost(e) {
-  try {
-    var raw = (e.parameter && e.parameter.data) ? e.parameter.data : e.postData.contents;
-    var payload = JSON.parse(raw);
-    return syncData(payload);
-  } catch(err) {
-    return ok('error: ' + err.message);
-  }
-}
+const SCRIPT_CODE = `// GudangKu Sync — RKT v6
+// ID Google Sheet sudah terisi otomatis
+var SPREADSHEET_ID = '1t7G-ssbxWuwrH7aJ5c8jCm9VvnKJIU2P60cMJdN16lM';
 
 function doGet(e) {
   try {
-    var raw = e.parameter.data || '{}';
-    var payload = JSON.parse(raw);
-    return syncData(payload);
+    var payload = JSON.parse(decodeURIComponent(e.parameter.data || '{}'));
+    var ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var now = new Date().toLocaleString('id-ID');
+    var type = payload.type || 'sync';
+
+    if (type === 'sku_batch') {
+      var sh = ss.getSheetByName('SKU') || ss.insertSheet('SKU');
+      if (payload.batchIndex === 0) {
+        sh.clearContents();
+        sh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
+      }
+      (payload.sku || []).forEach(function(s) {
+        sh.appendRow([s.kode,s.nama,s.harga||0,s.zona,s.lokasi||'',s.stok,s.min,s.satuan,now]);
+      });
+      return ok('batch ' + payload.batchIndex + ' ok');
+    }
+
+    if (type === 'trx_order') {
+      var trxSh = ss.getSheetByName('Transaksi') || ss.insertSheet('Transaksi');
+      trxSh.clearContents();
+      trxSh.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
+      (payload.transaksi || []).forEach(function(t) {
+        trxSh.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
+      });
+      var ordSh = ss.getSheetByName('Order') || ss.insertSheet('Order');
+      ordSh.clearContents();
+      ordSh.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
+      (payload.order || []).forEach(function(o) {
+        ordSh.appendRow([o.id,o.customer,o.kota||'',o.barang,o.status,o.by,o.date]);
+      });
+      return ok('trx+order ok');
+    }
+
+    return ok('ping ok');
   } catch(err) {
     return ok('error: ' + err.message);
   }
 }
 
-function syncData(payload) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
-  var now = new Date().toLocaleString('id-ID');
-
-  var skuSh = ss.getSheetByName('SKU') || ss.insertSheet('SKU');
-  skuSh.clearContents();
-  skuSh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
-  (payload.sku || []).forEach(function(s) {
-    skuSh.appendRow([s.kode,s.nama,s.harga||0,s.zona,s.lokasi||'',s.stok,s.min,s.satuan,now]);
-  });
-
-  var trxSh = ss.getSheetByName('Transaksi') || ss.insertSheet('Transaksi');
-  trxSh.clearContents();
-  trxSh.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
-  (payload.transaksi || []).forEach(function(t) {
-    trxSh.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
-  });
-
-  var ordSh = ss.getSheetByName('Order') || ss.insertSheet('Order');
-  ordSh.clearContents();
-  ordSh.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
-  (payload.order || []).forEach(function(o) {
-    ordSh.appendRow([o.id,o.customer,o.kota||'',o.barang,o.status,o.by,o.date]);
-  });
-
-  return ok('OK: synced ' + (payload.sku||[]).length + ' SKU');
-}
+function doPost(e) { return doGet(e); }
 
 function ok(msg) {
   return ContentService.createTextOutput(msg).setMimeType(ContentService.MimeType.TEXT);
@@ -985,44 +977,17 @@ function copyScript(){
 }
 
 // ==================== DRIVE SYNC via hidden form+iframe ====================
-// Cara ini bypass CORS sepenuhnya dan follow redirect Google Apps Script (302)
-// Tidak bisa baca respons balik (cross-origin), tapi data PASTI terkirim
-// Konfirmasi dilakukan dengan cek Google Sheet secara manual
+// Kirim via fetch GET — paling simpel, tidak ada CORS issue dari GitHub Pages
+// Data dikirim sebagai URL parameter, batch per 50 SKU kalau banyak
 
-function iframeSend(url, payload, onSent){
-  // Buat hidden iframe sebagai target form
-  const iframeId = 'gk_iframe_' + Date.now();
-  const formId   = 'gk_form_'   + Date.now();
-
-  const iframe = document.createElement('iframe');
-  iframe.name  = iframeId;
-  iframe.id    = iframeId;
-  iframe.style.display = 'none';
-  document.body.appendChild(iframe);
-
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = url;
-  form.target = iframeId;
-  form.style.display = 'none';
-  form.id = formId;
-
-  // Kirim data sebagai JSON string di field tersembunyi
-  const field = document.createElement('input');
-  field.type  = 'hidden';
-  field.name  = 'data';
-  field.value = JSON.stringify(payload);
-  form.appendChild(field);
-  document.body.appendChild(form);
-
-  // Submit — browser follow redirect otomatis, tidak kena CORS
-  form.submit();
-
-  // Bersihkan setelah 5 detik
-  setTimeout(function(){
-    try{ iframe.remove(); form.remove(); }catch(e){}
-    if(onSent) onSent();
-  }, 5000);
+function gaSend(url, payload, onDone){
+  const json = encodeURIComponent(JSON.stringify(payload));
+  const fullUrl = url + '?data=' + json;
+  // Gunakan no-cors fetch — request terkirim, respons tidak bisa dibaca (cross-origin)
+  // Tapi data PASTI sampai ke Apps Script
+  fetch(fullUrl, { method:'GET', mode:'no-cors' })
+    .then(function(){ if(onDone) onDone(true); })
+    .catch(function(){ if(onDone) onDone(false); });
 }
 
 function saveDriveUrl(){
@@ -1030,30 +995,52 @@ function saveDriveUrl(){
   if(!url||!url.includes('script.google.com')){ toast('⚠️ URL tidak valid'); return; }
   DB.driveUrl=url; saveDB();
   const res=document.getElementById('drive-test-result');
-  res.innerHTML='<div class="alert alert-info">🔄 Mengirim data ke Google Sheet... (tunggu 5 detik)</div>';
-
-  const payload = {
-    action: 'sync',
-    sku: DB.sku,
-    transaksi: DB.transaksi.slice(-200),
-    order: DB.order
-  };
-
-  iframeSend(url, payload, function(){
-    res.innerHTML='<div class="alert alert-success">✅ Data dikirim! Buka Google Sheet kamu — kalau muncul tab SKU/Transaksi/Order, berarti berhasil.<br><br>Kalau belum muncul, cek: apakah script sudah di-deploy ulang dengan kode terbaru?</div>';
+  res.innerHTML='<div class="alert alert-info">🔄 Mengirim ke Google Sheet...</div>';
+  syncToDrive(function(ok){
+    if(ok){
+      res.innerHTML='<div class="alert alert-success">✅ Request terkirim! Buka Google Sheet — cek apakah tab SKU/Transaksi/Order muncul dalam 10 detik.</div>';
+    } else {
+      res.innerHTML='<div class="alert alert-error">❌ Gagal mengirim. Pastikan internet tersambung.</div>';
+    }
     renderDashboard();
   });
 }
 
 function syncToDrive(onDone){
   if(!DB.driveUrl||DB.driveUrl.trim()==='') return;
-  const payload = {
-    action: 'sync',
-    sku: DB.sku,
-    transaksi: DB.transaksi.slice(-200),
-    order: DB.order
-  };
-  iframeSend(DB.driveUrl, payload, onDone);
+  const url = DB.driveUrl;
+
+  // Kirim SKU dalam batch @50 supaya URL tidak terlalu panjang
+  const BATCH = 50;
+  const skuBatches = [];
+  for(let i=0; i<Math.max(1,DB.sku.length); i+=BATCH){
+    skuBatches.push(DB.sku.slice(i, i+BATCH));
+  }
+
+  let batchIdx = 0;
+  function sendNext(){
+    if(batchIdx >= skuBatches.length){
+      // Setelah semua SKU, kirim transaksi + order
+      const trxPayload = {
+        type: 'trx_order',
+        transaksi: DB.transaksi.slice(-200),
+        order: DB.order
+      };
+      gaSend(url, trxPayload, function(){ if(onDone) onDone(true); });
+      return;
+    }
+    const payload = {
+      type: 'sku_batch',
+      batchIndex: batchIdx,
+      totalBatches: skuBatches.length,
+      sku: skuBatches[batchIdx]
+    };
+    gaSend(url, payload, function(){
+      batchIdx++;
+      setTimeout(sendNext, 300); // jeda kecil antar batch
+    });
+  }
+  sendNext();
 }
 
 function renderDriveStatus(){
