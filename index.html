@@ -473,10 +473,21 @@ textarea.form-input{resize:vertical;min-height:80px}
 <script>
 // ==================== DATA ====================
 const STORE = 'gudangku_rkt_v4';
+const DEFAULT_DRIVE_URL = 'https://script.google.com/macros/s/AKfycbxSsmhj2VZ7fb0C7IhkxGmOcCqAS3uAxKzP7X4timyP3lfDSXzb3dtfCJ50SdcCzpz3Ug/exec';
 let DB = { sku:[], transaksi:[], order:[], activity:[], driveUrl:'' };
 let excelData = [], excelHeaders = [];
 
-function loadDB(){ try{ const s=localStorage.getItem(STORE); if(s) DB=JSON.parse(s); }catch(e){} }
+function loadDB(){
+  try{
+    const s=localStorage.getItem(STORE);
+    if(s) DB=JSON.parse(s);
+    // Selalu pastikan URL terbaru terpakai
+    if(!DB.driveUrl || DB.driveUrl !== DEFAULT_DRIVE_URL){
+      DB.driveUrl = DEFAULT_DRIVE_URL;
+      saveDB();
+    }
+  }catch(e){}
+}
 function saveDB(){ try{ localStorage.setItem(STORE,JSON.stringify(DB)); }catch(e){} }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function nowDT(){ const d=new Date(); return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
@@ -931,37 +942,31 @@ const SCRIPT_CODE = `// GudangKu Sync — RKT v7
 var SPREADSHEET_ID = '1t7G-ssbxWuwrH7aJ5c8jCm9VvnKJIU2P60cMJdN16lM';
 
 function doGet(e) {
-  var type = (e.parameter && e.parameter.type) || 'ping';
-
-  // READ: kembalikan semua data dari Sheet ke aplikasi
-  if (type === 'read') {
-    try {
-      var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
-      var sku   = sheetToObjects(ss, 'SKU');
-      var trx   = sheetToObjects(ss, 'Transaksi');
-      var order = sheetToObjects(ss, 'Order');
-      // Konversi header sheet ke field yang dipakai aplikasi
-      var skuOut = sku.map(function(r) {
-        return {
-          id: Date.now() + Math.random(),
-          kode: r['Kode']||'', nama: r['Nama']||'',
-          harga: parseFloat(r['Harga'])||0,
-          zona: r['Zona']||'MM', lokasi: r['Lokasi']||'',
-          stok: parseInt(r['Stok'])||0, min: parseInt(r['Min'])||5,
-          satuan: r['Satuan']||'pcs', history:[]
-        };
-      }).filter(function(s){ return s.nama; });
-      var result = JSON.stringify({ok:true, sku:skuOut, transaksi:[], order:[]});
-      return ContentService.createTextOutput(result)
-        .setMimeType(ContentService.MimeType.JSON);
-    } catch(err) {
-      return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.message}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-  }
-
-  // WRITE: terima data dari aplikasi, tulis ke Sheet
   try {
+    var type = (e.parameter && e.parameter.type) || 'ping';
+
+    // READ — kembalikan data SKU ke aplikasi
+    if (type === 'read') {
+      var ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var sku = sheetToObjects(ss, 'SKU');
+      var out = sku.map(function(r, i) {
+        return {
+          id: i + 1,
+          kode:   String(r['Kode']   || ''),
+          nama:   String(r['Nama']   || ''),
+          harga:  parseFloat(r['Harga'])  || 0,
+          zona:   String(r['Zona']   || 'MM'),
+          lokasi: String(r['Lokasi'] || ''),
+          stok:   parseInt(r['Stok'])    || 0,
+          min:    parseInt(r['Min'])     || 5,
+          satuan: String(r['Satuan'] || 'pcs'),
+          history: []
+        };
+      }).filter(function(s) { return s.nama; });
+      return json({ ok: true, sku: out });
+    }
+
+    // WRITE — terima data dari aplikasi
     var payload = JSON.parse(decodeURIComponent(e.parameter.data || '{}'));
     var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
     var now = new Date().toLocaleString('id-ID');
@@ -995,6 +1000,7 @@ function doGet(e) {
     }
 
     return ok('ping ok');
+
   } catch(err) {
     return ok('error: ' + err.message);
   }
@@ -1016,7 +1022,13 @@ function sheetToObjects(ss, name) {
 }
 
 function ok(msg) {
-  return ContentService.createTextOutput(msg).setMimeType(ContentService.MimeType.TEXT);
+  return ContentService.createTextOutput(msg)
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function json(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }`;
 
 document.addEventListener('DOMContentLoaded', function(){
