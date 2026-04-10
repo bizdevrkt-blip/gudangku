@@ -502,7 +502,18 @@ function doLogin(){
     document.getElementById('main').style.display='block';
     document.getElementById('bottom-nav').style.display='flex';
     document.getElementById('current-user-label').textContent=RLABELS[role];
-    applyPerms(); goPage('dashboard',document.getElementById('nav-dashboard')); renderAll();
+    applyPerms();
+    goPage('dashboard',document.getElementById('nav-dashboard'));
+    renderAll();
+    // Auto-pull dari Drive saat login — semua role
+    if(DB.driveUrl){
+      toast('🔄 Memuat data terbaru...');
+      pullFromDrive(function(ok, reason){
+        if(ok) toast('✅ Data diperbarui dari Google Sheet');
+        else if(reason==='empty') toast('ℹ️ Belum ada data di Google Sheet');
+        // kalau gagal, diam saja — pakai data lokal
+      });
+    }
   } else { err.style.display='block'; err.textContent='Password salah. Coba lagi.'; }
 }
 
@@ -916,19 +927,47 @@ function exportLaporan(){
 // ==================== GOOGLE DRIVE SYNC ====================
 // Kirim via fetch GET no-cors — tidak ada CORS issue dari GitHub Pages
 
-const SCRIPT_CODE = `// GudangKu Sync — RKT v6
-// ID Google Sheet sudah terisi otomatis
+const SCRIPT_CODE = `// GudangKu Sync — RKT v7
 var SPREADSHEET_ID = '1t7G-ssbxWuwrH7aJ5c8jCm9VvnKJIU2P60cMJdN16lM';
 
 function doGet(e) {
+  var type = (e.parameter && e.parameter.type) || 'ping';
+
+  // READ: kembalikan semua data dari Sheet ke aplikasi
+  if (type === 'read') {
+    try {
+      var ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var sku   = sheetToObjects(ss, 'SKU');
+      var trx   = sheetToObjects(ss, 'Transaksi');
+      var order = sheetToObjects(ss, 'Order');
+      // Konversi header sheet ke field yang dipakai aplikasi
+      var skuOut = sku.map(function(r) {
+        return {
+          id: Date.now() + Math.random(),
+          kode: r['Kode']||'', nama: r['Nama']||'',
+          harga: parseFloat(r['Harga'])||0,
+          zona: r['Zona']||'MM', lokasi: r['Lokasi']||'',
+          stok: parseInt(r['Stok'])||0, min: parseInt(r['Min'])||5,
+          satuan: r['Satuan']||'pcs', history:[]
+        };
+      }).filter(function(s){ return s.nama; });
+      var result = JSON.stringify({ok:true, sku:skuOut, transaksi:[], order:[]});
+      return ContentService.createTextOutput(result)
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.message}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // WRITE: terima data dari aplikasi, tulis ke Sheet
   try {
     var payload = JSON.parse(decodeURIComponent(e.parameter.data || '{}'));
-    var ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
     var now = new Date().toLocaleString('id-ID');
-    var type = payload.type || 'sync';
 
     if (type === 'sku_batch') {
-      var sh = ss.getSheetByName('SKU') || ss.insertSheet('SKU');
+      var sh = ss2.getSheetByName('SKU') || ss2.insertSheet('SKU');
       if (payload.batchIndex === 0) {
         sh.clearContents();
         sh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
@@ -940,13 +979,13 @@ function doGet(e) {
     }
 
     if (type === 'trx_order') {
-      var trxSh = ss.getSheetByName('Transaksi') || ss.insertSheet('Transaksi');
+      var trxSh = ss2.getSheetByName('Transaksi') || ss2.insertSheet('Transaksi');
       trxSh.clearContents();
       trxSh.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
       (payload.transaksi || []).forEach(function(t) {
         trxSh.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
       });
-      var ordSh = ss.getSheetByName('Order') || ss.insertSheet('Order');
+      var ordSh = ss2.getSheetByName('Order') || ss2.insertSheet('Order');
       ordSh.clearContents();
       ordSh.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
       (payload.order || []).forEach(function(o) {
@@ -962,6 +1001,19 @@ function doGet(e) {
 }
 
 function doPost(e) { return doGet(e); }
+
+function sheetToObjects(ss, name) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) return [];
+  var data = sh.getDataRange().getValues();
+  if (data.length < 2) return [];
+  var headers = data[0];
+  return data.slice(1).map(function(row) {
+    var obj = {};
+    headers.forEach(function(h, i) { obj[h] = row[i]; });
+    return obj;
+  });
+}
 
 function ok(msg) {
   return ContentService.createTextOutput(msg).setMimeType(ContentService.MimeType.TEXT);
@@ -1079,6 +1131,33 @@ function doResetAll(){
   document.getElementById('confirm-reset-all').value='';
   renderAll();
   toast('✅ Semua data direset. Aplikasi bersih.');
+}
+
+// ==================== PULL FROM DRIVE ====================
+function pullFromDrive(onDone){
+  if(!DB.driveUrl||DB.driveUrl.trim()===''){
+    if(onDone) onDone(false,'no_url');
+    return;
+  }
+  // Baca data dari Google Sheet via Apps Script doGet?action=read
+  const url = DB.driveUrl + '?type=read&cb=gk_pull_' + Date.now();
+  // Pakai fetch dengan mode cors dulu — kalau gagal, skip
+  fetch(DB.driveUrl + '?type=read', { method:'GET' })
+    .then(r => r.json())
+    .then(data => {
+      if(data && data.sku && data.sku.length > 0){
+        // Merge: ambil data dari sheet, simpan ke lokal
+        DB.sku = data.sku;
+        if(data.transaksi) DB.transaksi = data.transaksi;
+        if(data.order) DB.order = data.order;
+        saveDB();
+        renderAll();
+        if(onDone) onDone(true);
+      } else {
+        if(onDone) onDone(false, 'empty');
+      }
+    })
+    .catch(() => { if(onDone) onDone(false,'fetch_error'); });
 }
 
 // ==================== RENDER ALL ====================
