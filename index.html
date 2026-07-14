@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>GudangKu v4 — RKT</title>
+<title>GudangKu v4.3 — RKT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
@@ -103,7 +103,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 </style>
 </head>
 <body>
-
+ 
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-logo">📦</div>
@@ -130,14 +130,14 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
   </div>
 </div>
-
+ 
 <div id="header" style="display:none">
   <div><div id="header-title">📦 GudangKu</div><div id="header-sub">RKT Distribution</div></div>
-  <div id="header-user" onclick="showLogout()">👤 <span id="current-user-label">-</span></div>
+  <div style="display:flex;align-items:center;gap:8px"><span id="sync-badge" onclick="processOutbox(true)" style="font-size:11px;font-weight:600;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:20px;cursor:pointer;display:none"></span><div id="header-user" onclick="showLogout()">👤 <span id="current-user-label">-</span></div></div>
 </div>
-
+ 
 <div id="main" style="display:none">
-
+ 
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div class="stat-grid">
@@ -153,7 +153,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="card"><div class="card-title">Aktivitas Terbaru</div><div id="activity-log"><div class="alert alert-info">Belum ada aktivitas hari ini.</div></div></div>
     <div class="card" id="low-card" style="display:none"><div class="card-title" style="color:var(--red)">⚠️ Stok Menipis</div><div id="low-list"></div></div>
   </div>
-
+ 
   <!-- STOK -->
   <div class="page" id="page-stok">
     <div class="section-header">
@@ -163,8 +163,8 @@ textarea.form-input{resize:vertical;min-height:80px}
         <button class="btn btn-primary btn-sm" id="btn-tambah" onclick="openModal('modal-tambah-sku')">+ Tambah</button>
       </div>
     </div>
-    <div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Cari nama/kode barang..." id="search-stok" oninput="renderStok()"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div class="search-box"><span class="search-icon">🔍</span><input type="text" placeholder="Cari nama/kode/supplier..." id="search-stok" oninput="renderStok()"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <select class="form-input" id="filter-zona" onchange="renderStok()" style="font-size:13px">
         <option value="">Semua Zona</option>
         <option value="FM">Fast Moving</option><option value="MM">Medium Moving</option>
@@ -175,10 +175,18 @@ textarea.form-input{resize:vertical;min-height:80px}
         <option value="low">Menipis</option><option value="ok">Normal</option>
       </select>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <select class="form-input" id="filter-kategori" onchange="renderStok()" style="font-size:13px">
+        <option value="">Semua Kategori</option>
+      </select>
+      <select class="form-input" id="filter-supplier" onchange="renderStok()" style="font-size:13px">
+        <option value="">Semua Supplier</option>
+      </select>
+    </div>
     <div id="stok-count" style="font-size:12px;color:var(--text-muted);margin-bottom:8px"></div>
     <div id="stok-list"></div>
   </div>
-
+ 
   <!-- TRANSAKSI -->
   <div class="page" id="page-transaksi">
     <div class="section-title" style="margin-bottom:12px">Transaksi Barang</div>
@@ -189,7 +197,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="section-title" style="margin-bottom:8px;font-size:13px;color:var(--text-muted)">Riwayat Hari Ini</div>
     <div id="trx-list"></div>
   </div>
-
+ 
   <!-- ORDER -->
   <div class="page" id="page-order">
     <div class="section-header">
@@ -203,7 +211,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
     <div id="order-list"></div>
   </div>
-
+ 
   <!-- LAPORAN -->
   <div class="page" id="page-laporan">
     <div class="section-title" style="margin-bottom:12px">Laporan Harian</div>
@@ -218,14 +226,14 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
     <div class="card"><div class="card-title">Semua Stok SKU</div><div id="l-stok"></div></div>
     <button class="btn btn-outline" onclick="exportLaporan()">📋 Salin Laporan (WhatsApp)</button>
-
+ 
     <!-- DRIVE SETTINGS — hanya manager -->
     <div id="drive-settings-section" style="display:none;margin-top:16px">
       <div class="divider"></div>
       <div class="section-title" style="margin-bottom:10px">⚙️ Google Drive Sync</div>
       <div class="card" id="drive-status-card"></div>
       <button class="btn btn-outline" onclick="openModal('modal-drive-setup')">🔗 Setup / Ubah Koneksi Drive</button>
-
+ 
       <div class="divider"></div>
       <div class="section-title" style="margin-bottom:6px;color:var(--red)">🗑️ Reset Data</div>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Hanya bisa dilakukan oleh Manager. Tidak bisa dibatalkan.</div>
@@ -235,9 +243,9 @@ textarea.form-input{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
-
+ 
 </div>
-
+ 
 <!-- BOTTOM NAV -->
 <div id="bottom-nav" style="display:none">
   <div class="nav-item active" onclick="goPage('dashboard',this)" id="nav-dashboard"><div class="nav-icon">🏠</div><div class="nav-label">Beranda</div></div>
@@ -246,18 +254,18 @@ textarea.form-input{resize:vertical;min-height:80px}
   <div class="nav-item" onclick="goPage('order',this)" id="nav-order"><div class="nav-icon">📋</div><div class="nav-label">Order</div></div>
   <div class="nav-item" onclick="goPage('laporan',this)" id="nav-laporan"><div class="nav-icon">📊</div><div class="nav-label">Laporan</div></div>
 </div>
-
+ 
 <div id="toast"></div>
-
+ 
 <!-- ===== MODALS ===== -->
-
+ 
 <!-- IMPORT EXCEL -->
 <div class="modal-overlay" id="modal-import">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">📤 Import dari Excel</div>
     <div class="alert alert-info" style="margin-bottom:12px">File Excel kamu akan dibaca di HP ini saja — tidak dikirim ke mana-mana. Stok semua barang akan di-set ke <strong>0</strong>.</div>
-
+ 
     <div id="import-step-1">
       <div class="form-group">
         <div class="form-label">Pilih File Excel (.xlsx / .xls)</div>
@@ -275,6 +283,14 @@ textarea.form-input{resize:vertical;min-height:80px}
             <div class="form-label">Kolom Kode Barang (boleh kosong)</div>
             <select class="form-input" id="col-kode"><option value="">-- Tidak ada / skip --</option></select>
           </div>
+          <div class="form-group">
+            <div class="form-label">Kolom Kategori (boleh kosong)</div>
+            <select class="form-input" id="col-kategori"><option value="">-- Tidak ada / skip --</option></select>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Kolom Supplier (boleh kosong)</div>
+            <select class="form-input" id="col-supplier"><option value="">-- Tidak ada / skip --</option></select>
+          </div>
           <div class="form-group" id="col-harga-group">
             <div class="form-label">Kolom Harga (boleh kosong)</div>
             <select class="form-input" id="col-harga"><option value="">-- Tidak ada / skip --</option></select>
@@ -287,7 +303,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
   </div>
 </div>
-
+ 
 <!-- TAMBAH SKU -->
 <div class="modal-overlay" id="modal-tambah-sku">
   <div class="modal">
@@ -295,6 +311,8 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="modal-title">+ Tambah SKU Manual</div>
     <div class="form-group"><div class="form-label">Kode Barang</div><input type="text" class="form-input" id="sku-kode" placeholder="Cth: PLY-A02-150" style="text-transform:uppercase"></div>
     <div class="form-group"><div class="form-label">Nama Barang</div><input type="text" class="form-input" id="sku-nama" placeholder="Cth: Pulley Tipe A 150mm"></div>
+    <div class="form-group"><div class="form-label">Kategori</div><input type="text" class="form-input" id="sku-kategori" placeholder="Cth: Pulley, V-Belt, Bearing, Pertanian..."></div>
+    <div class="form-group"><div class="form-label">Supplier</div><input type="text" class="form-input" id="sku-supplier" placeholder="Cth: PT Maju Jaya, Supplier Jakarta..."></div>
     <div id="sku-harga-group" class="form-group"><div class="form-label">Harga (Rp)</div><input type="number" class="form-input" id="sku-harga" placeholder="0" min="0"></div>
     <div class="form-group"><div class="form-label">Zona</div>
       <select class="form-input" id="sku-zona">
@@ -311,7 +329,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-tambah-sku')">Batal</button>
   </div>
 </div>
-
+ 
 <!-- BARANG MASUK -->
 <div class="modal-overlay" id="modal-masuk">
   <div class="modal">
@@ -327,7 +345,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-masuk')">Batal</button>
   </div>
 </div>
-
+ 
 <!-- BARANG KELUAR -->
 <div class="modal-overlay" id="modal-keluar">
   <div class="modal">
@@ -344,7 +362,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-keluar')">Batal</button>
   </div>
 </div>
-
+ 
 <!-- BUAT ORDER -->
 <div class="modal-overlay" id="modal-order">
   <div class="modal">
@@ -358,7 +376,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-order')">Batal</button>
   </div>
 </div>
-
+ 
 <!-- DETAIL SKU -->
 <div class="modal-overlay" id="modal-detail-sku">
   <div class="modal">
@@ -367,11 +385,37 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="card" style="margin:0 0 12px;box-shadow:none;border:1px solid var(--gray-border)">
       <div class="stock-row"><span class="stock-key">Kode</span><span class="stock-val" id="ds-kode">-</span></div>
       <div class="stock-row" id="ds-harga-row"><span class="stock-key">Harga</span><span class="stock-val" id="ds-harga">-</span></div>
+      <div class="stock-row"><span class="stock-key">Kategori</span><span class="stock-val" id="ds-kategori">-</span></div>
+      <div class="stock-row"><span class="stock-key">Supplier</span><span class="stock-val" id="ds-supplier">-</span></div>
       <div class="stock-row"><span class="stock-key">Zona</span><span id="ds-zona">-</span></div>
       <div class="stock-row"><span class="stock-key">Lokasi</span><span class="stock-val" id="ds-lokasi">-</span></div>
-      <div class="stock-row"><span class="stock-key">Stok Saat Ini</span><span class="stock-val" id="ds-stok" style="font-size:20px;color:var(--blue-dark)">-</span></div>
-      <div class="stock-row"><span class="stock-key">Stok Minimum</span><span class="stock-val" id="ds-min">-</span></div>
+      <div class="stock-row">
+        <span class="stock-key">Stok Saat Ini</span>
+        <span class="stock-val" id="ds-stok" style="font-size:20px;color:var(--blue-dark)">-</span>
+      </div>
+      <div class="stock-row">
+        <span class="stock-key">Stok Minimum</span>
+        <span class="stock-val" id="ds-min">-</span>
+      </div>
     </div>
+ 
+    <!-- Edit Stok & Minimum — hanya manager & kepala gudang -->
+    <div id="ds-edit-section">
+      <div class="card-title" style="margin-bottom:10px">✏️ Set Stok & Minimum</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <div class="form-label">Stok Saat Ini</div>
+          <input type="number" class="form-input" id="ds-edit-stok" min="0" placeholder="0">
+        </div>
+        <div>
+          <div class="form-label">Stok Minimum</div>
+          <input type="number" class="form-input" id="ds-edit-min" min="0" placeholder="5">
+        </div>
+      </div>
+      <button class="btn btn-success" onclick="simpanEditStok()" style="margin-bottom:10px">💾 Simpan Perubahan</button>
+      <div class="divider"></div>
+    </div>
+ 
     <div class="card-title" style="margin-bottom:8px">Riwayat Mutasi</div>
     <div id="ds-history"></div>
     <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -381,7 +425,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-detail-sku')">Tutup</button>
   </div>
 </div>
-
+ 
 <!-- DETAIL ORDER -->
 <div class="modal-overlay" id="modal-detail-order">
   <div class="modal">
@@ -402,7 +446,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-detail-order')">Tutup</button>
   </div>
 </div>
-
+ 
 <!-- LOGOUT -->
 <div class="modal-overlay" id="modal-logout">
   <div class="modal">
@@ -413,7 +457,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-logout')">Batal</button>
   </div>
 </div>
-
+ 
 <!-- GOOGLE DRIVE SETUP -->
 <div class="modal-overlay" id="modal-drive-setup">
   <div class="modal">
@@ -424,12 +468,12 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="card-title" style="margin-bottom:8px">Cara Setup (lakukan sekali)</div>
     
     <div class="step-box"><div class="step-row"><span class="step-num">1</span><span style="font-size:13px">Buka <strong>script.google.com</strong> di browser komputer/HP kamu</span></div></div>
-    <div class="step-box"><div class="step-row"><span class="step-num">2</span><span style="font-size:13px">Klik <strong>New Project</strong> → hapus kode lama → paste kode di bawah → Simpan</span></div></div>
+    <div class="step-box"><div class="step-row"><span class="step-num">2</span><span style="font-size:13px">Buka project Apps Script yang sudah ada (dari dalam Google Sheet: <strong>Extensions → Apps Script</strong>) → hapus SEMUA kode lama → paste kode v8 di bawah → Simpan</span></div></div>
     
     <div style="background:#1a1a1a;color:#7ec8e3;padding:12px;border-radius:8px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:10px;overflow-x:auto" id="apps-script-code"></div>
     <button class="btn btn-gray btn-sm" onclick="copyScript()" style="margin-bottom:10px">📋 Salin Kode</button>
     
-    <div class="step-box"><div class="step-row"><span class="step-num">3</span><span style="font-size:13px">Klik <strong>Deploy → New Deployment → Web App</strong>. Set <em>Execute as: Me</em> dan <em>Who has access: Anyone</em>. Klik Deploy.</span></div></div>
+    <div class="step-box"><div class="step-row"><span class="step-num">3</span><span style="font-size:13px"><strong>PENTING — supaya URL tidak berubah:</strong> klik <strong>Deploy → Manage deployments → ikon pensil ✏️ → Version: New version → Deploy</strong>. Jangan buat New Deployment baru. Kalau ini deployment pertama, baru pakai New Deployment (Execute as: Me, Access: Anyone).</span></div></div>
     <div class="step-box"><div class="step-row"><span class="step-num">4</span><span style="font-size:13px">Copy URL yang muncul, paste di bawah ini:</span></div></div>
     
     <div class="form-group">
@@ -441,7 +485,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-drive-setup')">Tutup</button>
   </div>
 </div>
-
+ 
 <!-- MODAL RESET SKU -->
 <div class="modal-overlay" id="modal-reset">
   <div class="modal">
@@ -457,7 +501,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-reset');document.getElementById('confirm-reset-sku').value=''">Batal</button>
   </div>
 </div>
-
+ 
 <!-- MODAL RESET ALL -->
 <div class="modal-overlay" id="modal-reset-all">
   <div class="modal">
@@ -472,81 +516,107 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-reset-all');document.getElementById('confirm-reset-all').value=''">Batal</button>
   </div>
 </div>
-
+ 
 <script>
 // ==================== DATA ====================
 const STORE = 'gudangku_rkt_v4';
-const DEFAULT_DRIVE_URL = 'https://script.google.com/macros/s/AKfycbxSsmhj2VZ7fb0C7IhkxGmOcCqAS3uAxKzP7X4timyP3lfDSXzb3dtfCJ50SdcCzpz3Ug/exec';
-let DB = { sku:[], transaksi:[], order:[], activity:[], driveUrl:'' };
+const SESSION_KEY = 'gudangku_rkt_session';
+const DEFAULT_DRIVE_URL = 'https://script.google.com/macros/s/AKfycbydjZ5NgCVTvrWfdWZnrMudoJDUIThYIHcMzqOwsIxtwjO3LdXpEBPLQBkuW0EjH1Sm/exec';
+const URL_VER = 3; // naikkan angka ini setiap ganti deployment URL -> semua HP auto-migrasi
+let DB = { sku:[], transaksi:[], order:[], activity:[], outbox:[], driveUrl:'' };
 let excelData = [], excelHeaders = [];
-
+ 
 function loadDB(){
   try{
     const s=localStorage.getItem(STORE);
-    if(s) DB=JSON.parse(s);
-    // Selalu pastikan URL terbaru terpakai
-    if(!DB.driveUrl || DB.driveUrl !== DEFAULT_DRIVE_URL){
-      DB.driveUrl = DEFAULT_DRIVE_URL;
-      saveDB();
-    }
+    if(s){ const parsed=JSON.parse(s); DB=Object.assign({sku:[],transaksi:[],order:[],activity:[],outbox:[],driveUrl:''}, parsed); }
+    if(!DB.outbox) DB.outbox=[];
+    // Migrasi URL: kalau versi URL di app lebih baru dari yang tersimpan, timpa otomatis.
+    // Semua HP tim langsung pakai deployment terbaru tanpa setting manual.
+    if(!DB.driveUrl || (DB.urlVer||0) < URL_VER){ DB.driveUrl = DEFAULT_DRIVE_URL; DB.urlVer = URL_VER; saveDB(); }
   }catch(e){}
 }
-function saveDB(){ try{ localStorage.setItem(STORE,JSON.stringify(DB)); }catch(e){} }
+function saveDB(){ try{ localStorage.setItem(STORE,JSON.stringify(DB)); }catch(e){ toast('⚠️ Penyimpanan HP penuh — data mungkin tidak tersimpan'); } }
 function today(){ return new Date().toISOString().split('T')[0]; }
 function nowDT(){ const d=new Date(); return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
-
-// ==================== AUTH ====================
+function uid(pfx){ return pfx + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase(); }
+ 
+// ==================== AUTH & SESSION ====================
 const CREDS = { manager:'rkt2024', kepala_gudang:'gudang123', admin:'admin123', sales:'sales123' };
 const RLABELS = { manager:'Manager', kepala_gudang:'Kepala Gudang', admin:'Admin CS', sales:'Sales' };
-// canSeeHarga: manager, admin, sales dapat lihat harga. kepala_gudang tidak.
 const CAN_HARGA = ['manager','admin','sales'];
 let role = null;
 let selRole = 'manager';
 let orderFilter = 'semua';
-
+ 
 function selectRole(el){ document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected')); el.classList.add('selected'); selRole=el.dataset.role; }
-
+ 
+function enterApp(withPull){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('header').style.display='flex';
+  document.getElementById('main').style.display='block';
+  document.getElementById('bottom-nav').style.display='flex';
+  document.getElementById('current-user-label').textContent=RLABELS[role];
+  applyPerms();
+  goPage('dashboard',document.getElementById('nav-dashboard'));
+  renderAll();
+  updateSyncBadge();
+  if(withPull) safePull();
+}
+ 
 function doLogin(){
   const p=document.getElementById('login-pass').value;
   const err=document.getElementById('login-error');
   if(CREDS[selRole]===p){
     role=selRole; err.style.display='none';
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('header').style.display='flex';
-    document.getElementById('main').style.display='block';
-    document.getElementById('bottom-nav').style.display='flex';
-    document.getElementById('current-user-label').textContent=RLABELS[role];
-    applyPerms();
-    goPage('dashboard',document.getElementById('nav-dashboard'));
-    renderAll();
-    // Pull data terbaru dari Google Sheet saat login
-    toast('🔄 Memuat data dari Google Sheet...');
-    pullFromDrive(function(ok, val){
-      if(ok) toast('✅ ' + val + ' SKU dimuat dari Google Sheet');
-      else if(val==='empty') toast('ℹ️ Google Sheet belum ada data SKU');
-      else toast('⚠️ Pakai data lokal — Sheet tidak terjangkau');
-    });
+    try{ localStorage.setItem(SESSION_KEY, JSON.stringify({role:role, at:Date.now()})); }catch(e){}
+    enterApp(true);
   } else { err.style.display='block'; err.textContent='Password salah. Coba lagi.'; }
 }
-
-function doLogout(){ role=null; closeModal('modal-logout'); document.getElementById('login-screen').classList.remove('hidden'); ['header','main','bottom-nav'].forEach(id=>document.getElementById(id).style.display='none'); document.getElementById('login-pass').value=''; document.getElementById('login-error').style.display='none'; }
-function showLogout(){ document.getElementById('logout-info').textContent='Login sebagai: '+RLABELS[role]; openModal('modal-logout'); }
-
+ 
+function restoreSession(){
+  try{
+    const s=localStorage.getItem(SESSION_KEY);
+    if(!s) return false;
+    const sess=JSON.parse(s);
+    if(sess && sess.role && CREDS[sess.role]!==undefined){
+      role=sess.role;
+      // pre-select role button di login screen (untuk konsistensi visual kalau logout nanti)
+      const btn=document.querySelector('.role-btn[data-role="'+role+'"]');
+      if(btn){ document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); selRole=role; }
+      enterApp(true);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+ 
+function doLogout(){
+  role=null;
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+  closeModal('modal-logout');
+  document.getElementById('login-screen').classList.remove('hidden');
+  ['header','main','bottom-nav'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').style.display='none';
+}
+function showLogout(){
+  const pend = DB.outbox.length;
+  document.getElementById('logout-info').textContent='Login sebagai: '+RLABELS[role]+(pend?(' — ⏳ '+pend+' data belum tersinkron ke Sheet'):' — ✅ semua data tersinkron');
+  openModal('modal-logout');
+}
+ 
 function applyPerms(){
-  // Transaksi hanya manager & kepala gudang
   const navTrx=document.getElementById('nav-transaksi');
   navTrx.style.display=(role==='manager'||role==='kepala_gudang')?'flex':'none';
-  // Tambah SKU hanya manager
   document.getElementById('btn-tambah').style.display=role==='manager'?'inline-flex':'none';
   document.getElementById('btn-import').style.display=role==='manager'?'inline-flex':'none';
-  // Harga field di tambah SKU
   const hg=document.getElementById('sku-harga-group');
   if(hg) hg.style.display=CAN_HARGA.includes(role)?'block':'none';
-  // Drive settings hanya manager
   const ds=document.getElementById('drive-settings-section');
   if(ds) ds.style.display=role==='manager'?'block':'none';
 }
-
+ 
 // ==================== NAVIGATION ====================
 function goPage(name,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -558,7 +628,7 @@ function goPage(name,el){
   if(name==='stok'){ renderStok(); }
   if(name==='order'){ renderOrder(orderFilter); }
 }
-
+ 
 // ==================== MODAL ====================
 function openModal(id){
   if(id==='modal-masuk') fillSKUList('masuk-sku','masuk-search');
@@ -567,80 +637,82 @@ function openModal(id){
 }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){ if(e.target===this) this.classList.remove('open'); }));
-
+ 
 // ==================== EXCEL IMPORT ====================
 function readExcel(input){
   const file=input.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=function(e){
     try{
-      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const wb=XLSX.read(e.target.result,{type:'array'});
       const ws=wb.Sheets[wb.SheetNames[0]];
       const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       if(!data||data.length<2){ toast('⚠️ File kosong atau format tidak dikenal'); return; }
       excelHeaders=data[0].map((h,i)=>h||'Kolom '+(i+1));
       excelData=data.slice(1).filter(r=>r.some(c=>c!==''));
-      
-      // Build preview
+ 
       const tbl=document.getElementById('preview-table');
       const heads=excelHeaders.slice(0,8);
       tbl.innerHTML='<thead><tr>'+heads.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>'+
         excelData.slice(0,5).map(r=>'<tr>'+heads.map((_,i)=>`<td>${r[i]||''}</td>`).join('')+'</tr>').join('')+'</tbody>';
-      
-      // Fill column selectors
+ 
       const opts='<option value="">-- Tidak ada --</option>'+excelHeaders.map((h,i)=>`<option value="${i}">${h}</option>`).join('');
       document.getElementById('col-nama').innerHTML=opts;
       document.getElementById('col-kode').innerHTML=opts;
+      document.getElementById('col-kategori').innerHTML=opts;
+      document.getElementById('col-supplier').innerHTML=opts;
       document.getElementById('col-harga').innerHTML=opts;
-      
-      // Auto-detect common column names
+ 
       excelHeaders.forEach((h,i)=>{
-        const lh=h.toLowerCase();
+        const lh=String(h).toLowerCase();
         if(lh.includes('nama')||lh.includes('barang')||lh.includes('item')||lh.includes('produk')){ document.getElementById('col-nama').value=i; }
         if(lh.includes('kode')||lh.includes('sku')||lh.includes('part')){ document.getElementById('col-kode').value=i; }
+        if(lh.includes('kategori')||lh.includes('category')||lh.includes('tipe')||lh.includes('type')||lh.includes('jenis')){ document.getElementById('col-kategori').value=i; }
+        if(lh.includes('supplier')||lh.includes('vendor')||lh.includes('pemasok')||lh.includes('distributor')){ document.getElementById('col-supplier').value=i; }
         if(lh.includes('harga')||lh.includes('price')||lh.includes('hgr')){ document.getElementById('col-harga').value=i; }
       });
-      
+ 
       document.getElementById('import-count').style.display='block';
       document.getElementById('import-count').textContent='✅ '+excelData.length+' baris ditemukan. Siap diimport.';
       document.getElementById('import-preview').style.display='block';
     }catch(err){ toast('⚠️ Gagal membaca file: '+err.message); }
   };
-  reader.readAsBinaryString(file);
+  reader.readAsArrayBuffer(file);
 }
-
+ 
 function prosesImport(){
   const colNama=document.getElementById('col-nama').value;
   const colKode=document.getElementById('col-kode').value;
+  const colKategori=document.getElementById('col-kategori').value;
+  const colSupplier=document.getElementById('col-supplier').value;
   const colHarga=document.getElementById('col-harga').value;
   if(colNama===''){toast('⚠️ Pilih kolom Nama Barang dulu');return;}
-  
   let added=0, skipped=0;
   excelData.forEach((row,idx)=>{
     const nama=String(row[parseInt(colNama)]||'').trim();
     if(!nama){ skipped++; return; }
     const kode=colKode!==''?String(row[parseInt(colKode)]||'').trim().toUpperCase():('IMP-'+String(idx+1).padStart(4,'0'));
+    const kategori=colKategori!==''?String(row[parseInt(colKategori)]||'').trim():'';
+    const supplier=colSupplier!==''?String(row[parseInt(colSupplier)]||'').trim():'';
     const harga=colHarga!==''?parseFloat(String(row[parseInt(colHarga)]||'0').replace(/[^0-9.]/g,''))||0:0;
-    // skip duplikat nama
     if(DB.sku.find(s=>s.nama.toLowerCase()===nama.toLowerCase())){ skipped++; return; }
-    DB.sku.push({ id:Date.now()+idx, kode, nama, harga, zona:'MM', lokasi:'', stok:0, min:5, satuan:'pcs', history:[] });
+    DB.sku.push({ id:Date.now()+idx, kode, nama, kategori, supplier, harga, zona:'MM', lokasi:'', stok:0, min:5, satuan:'pcs', history:[] });
     added++;
   });
-  
   saveDB();
   closeModal('modal-import');
   addActivity('Import Excel: '+added+' SKU berhasil diimport', 'success');
   renderStok(); renderDashboard();
   toast('✅ '+added+' SKU diimport'+( skipped?' ('+skipped+' dilewati)':''));
-  
-  // Auto-push to Drive
-  if(DB.driveUrl) syncToDrive();
+  enqueueFullSkuPush();
 }
-
+ 
 // ==================== SKU ====================
 function simpanSKU(){
   const kode=(document.getElementById('sku-kode').value||'').trim().toUpperCase();
   const nama=(document.getElementById('sku-nama').value||'').trim();
+  const kategori=(document.getElementById('sku-kategori').value||'').trim();
+  const supplier=(document.getElementById('sku-supplier').value||'').trim();
   const harga=parseFloat(document.getElementById('sku-harga').value)||0;
   const zona=document.getElementById('sku-zona').value;
   const lokasi=(document.getElementById('sku-lokasi').value||'').trim().toUpperCase();
@@ -649,39 +721,60 @@ function simpanSKU(){
   if(!nama){toast('⚠️ Nama barang wajib diisi');return;}
   const autoKode=kode||(zona+'-'+String(DB.sku.length+1).padStart(4,'0'));
   if(DB.sku.find(s=>s.kode===autoKode)){toast('⚠️ Kode sudah ada');return;}
-  DB.sku.push({id:Date.now(),kode:autoKode,nama,harga,zona,lokasi,stok:0,min,satuan,history:[]});
+  const s={id:Date.now(),kode:autoKode,nama,kategori,supplier,harga,zona,lokasi,stok:0,min,satuan,history:[]};
+  DB.sku.push(s);
   saveDB();
   closeModal('modal-tambah-sku');
   ['sku-kode','sku-nama','sku-harga','sku-lokasi','sku-min'].forEach(id=>document.getElementById(id).value='');
-  addActivity('SKU baru: '+nama,  'success');
+  addActivity('SKU baru: '+nama,'success');
   renderStok(); renderDashboard();
-  if(DB.driveUrl) syncToDrive();
+  enqueue({type:'sku_upsert', sku:skuRow(s)});
   toast('✅ SKU ditambah');
 }
-
+ 
+function skuRow(s){
+  return {kode:s.kode,nama:s.nama,kategori:s.kategori||'',supplier:s.supplier||'',harga:s.harga||0,zona:s.zona||'MM',lokasi:s.lokasi||'',stok:s.stok||0,min:s.min||5,satuan:s.satuan||'pcs'};
+}
+ 
 function renderStok(){
   const q=(document.getElementById('search-stok').value||'').toLowerCase();
   const zona=document.getElementById('filter-zona').value;
   const fs=document.getElementById('filter-stok').value;
+  const fkat=document.getElementById('filter-kategori').value;
+  const fsup=document.getElementById('filter-supplier').value;
+ 
+  const kats=[...new Set(DB.sku.map(s=>s.kategori||'').filter(k=>k))].sort();
+  const sups=[...new Set(DB.sku.map(s=>s.supplier||'').filter(s=>s))].sort();
+  const katEl=document.getElementById('filter-kategori');
+  const supEl=document.getElementById('filter-supplier');
+  const curKat=katEl.value; const curSup=supEl.value;
+  katEl.innerHTML='<option value="">Semua Kategori</option>'+kats.map(k=>`<option value="${k}"${k===curKat?' selected':''}>${k}</option>`).join('');
+  supEl.innerHTML='<option value="">Semua Supplier</option>'+sups.map(s=>`<option value="${s}"${s===curSup?' selected':''}>${s}</option>`).join('');
+ 
   let items=DB.sku.filter(s=>{
-    const mq=!q||s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q);
+    const mq=!q||s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q)||(s.supplier||'').toLowerCase().includes(q)||(s.kategori||'').toLowerCase().includes(q);
     const mz=!zona||s.zona===zona;
     const ml=fs==='low'?s.stok<=s.min:fs==='ok'?s.stok>s.min:true;
-    return mq&&mz&&ml;
+    const mk=!fkat||(s.kategori||'')===fkat;
+    const ms=!fsup||(s.supplier||'')===fsup;
+    return mq&&mz&&ml&&mk&&ms;
   });
   document.getElementById('stok-count').textContent=items.length+' barang ditampilkan dari '+DB.sku.length+' total SKU';
   const el=document.getElementById('stok-list');
   if(!items.length){el.innerHTML='<div class="alert alert-info">Tidak ada barang ditemukan.</div>';return;}
   const canH=CAN_HARGA.includes(role);
-  el.innerHTML=items.map(s=>{
+  const LIMIT=150;
+  const shown=items.slice(0,LIMIT);
+  el.innerHTML=shown.map(s=>{
     const low=s.stok<=s.min;
     const zb={FM:'badge-green',MM:'badge-blue',SM:'badge-amber',DS:'badge-gray'}[s.zona]||'badge-gray';
     const hargaStr=canH&&s.harga?'Rp '+s.harga.toLocaleString('id-ID'):'';
+    const meta=[s.kode,s.lokasi,hargaStr,s.kategori,s.supplier].filter(Boolean).join(' · ');
     return `<div class="list-item" onclick="showDetailSKU(${s.id})">
       <div class="list-icon" style="background:${low?'var(--red-light)':'var(--blue-light)'}">${low?'⚠️':'📦'}</div>
       <div class="list-item-body">
         <div class="list-item-title">${s.nama}</div>
-        <div class="list-item-sub">${s.kode}${s.lokasi?' · '+s.lokasi:''}${hargaStr?' · '+hargaStr:''}</div>
+        <div class="list-item-sub">${meta}</div>
         <div style="margin-top:4px"><span class="badge ${zb}" style="margin-right:4px">${s.zona}</span>${low?'<span class="badge badge-red">Stok Menipis</span>':''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -689,13 +782,18 @@ function renderStok(){
         <div style="font-size:11px;color:var(--text-muted)">${s.satuan}</div>
       </div>
     </div>`;
-  }).join('');
+  }).join('')+(items.length>LIMIT?`<div class="alert alert-info">Menampilkan ${LIMIT} dari ${items.length} — gunakan pencarian untuk mempersempit.</div>`:'');
 }
-
+ 
+let currentSKUId = null;
+ 
 function showDetailSKU(id){
   const s=DB.sku.find(x=>x.id==id); if(!s) return;
+  currentSKUId = id;
   document.getElementById('ds-nama').textContent=s.nama;
   document.getElementById('ds-kode').textContent=s.kode;
+  document.getElementById('ds-kategori').textContent=s.kategori||'-';
+  document.getElementById('ds-supplier').textContent=s.supplier||'-';
   const canH=CAN_HARGA.includes(role);
   const hRow=document.getElementById('ds-harga-row');
   if(canH&&s.harga){ hRow.style.display='flex'; document.getElementById('ds-harga').textContent='Rp '+s.harga.toLocaleString('id-ID'); }
@@ -705,18 +803,43 @@ function showDetailSKU(id){
   document.getElementById('ds-lokasi').textContent=s.lokasi||'-';
   document.getElementById('ds-stok').textContent=s.stok+' '+s.satuan;
   document.getElementById('ds-min').textContent=s.min+' '+s.satuan;
+  document.getElementById('ds-edit-stok').value=s.stok;
+  document.getElementById('ds-edit-min').value=s.min;
+  const editSec=document.getElementById('ds-edit-section');
+  if(editSec) editSec.style.display=(role==='manager'||role==='kepala_gudang')?'block':'none';
   const hist=s.history||[];
   const hEl=document.getElementById('ds-history');
   if(!hist.length) hEl.innerHTML='<div class="alert alert-info">Belum ada mutasi.</div>';
   else hEl.innerHTML=hist.slice(0,10).map(h=>`<div class="log-item"><div class="log-time">${h.time} · ${h.by}</div><div class="log-text">${h.type==='masuk'?'📥':'📤'} <strong>${h.type==='masuk'?'+':'−'}${h.qty}</strong> — ${h.note||'-'}</div></div>`).join('');
   openModal('modal-detail-sku');
 }
-
-// ==================== TRANSAKSI ====================
+ 
+function simpanEditStok(){
+  const s = DB.sku.find(x=>x.id==currentSKUId); if(!s) return;
+  const newStok = parseInt(document.getElementById('ds-edit-stok').value);
+  const newMin  = parseInt(document.getElementById('ds-edit-min').value);
+  if(isNaN(newStok)||newStok<0){ toast('⚠️ Stok tidak valid'); return; }
+  if(isNaN(newMin)||newMin<0){ toast('⚠️ Stok minimum tidak valid'); return; }
+  const selisih = newStok - s.stok;
+  s.stok = newStok;
+  s.min  = newMin;
+  s.history = s.history||[];
+  if(selisih !== 0){
+    s.history.unshift({ type: selisih>0?'masuk':'keluar', qty: Math.abs(selisih), note:'Set manual oleh '+RLABELS[role], by:RLABELS[role], time:nowDT() });
+  }
+  saveDB();
+  document.getElementById('ds-stok').textContent=s.stok+' '+s.satuan;
+  document.getElementById('ds-min').textContent=s.min+' '+s.satuan;
+  renderStok(); renderDashboard();
+  enqueue({type:'sku_upsert', sku:skuRow(s)});
+  addActivity('Edit stok: '+s.nama+' → '+s.stok+' (min: '+s.min+')', 'info');
+  toast('✅ Stok '+s.nama+' diperbarui → '+s.stok+' '+s.satuan);
+}
+ 
 function fillSKUList(selectId, searchId){
   const q=(document.getElementById(searchId)?.value||'').toLowerCase();
   const el=document.getElementById(selectId);
-  const items=DB.sku.filter(s=>!q||s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q));
+  const items=DB.sku.filter(s=>!q||s.nama.toLowerCase().includes(q)||s.kode.toLowerCase().includes(q)).slice(0,80);
   el.innerHTML=items.map(s=>`<option value="${s.id}">${s.nama} (${s.kode}) — ${s.stok} ${s.satuan}</option>`).join('');
 }
 function filterMasukList(){ fillSKUList('masuk-sku','masuk-search'); }
@@ -729,7 +852,7 @@ function showStokInfo(){
   else info.style.display='none';
 }
 function chQty(id,d){ const el=document.getElementById(id); el.value=Math.max(1,(parseInt(el.value)||1)+d); }
-
+ 
 function prosesMasuk(){
   const id=document.getElementById('masuk-sku').value;
   const qty=parseInt(document.getElementById('masuk-qty').value)||0;
@@ -741,17 +864,19 @@ function prosesMasuk(){
   s.stok+=qty;
   s.history=s.history||[];
   s.history.unshift({type:'masuk',qty,note:sumber||catatan||'-',by:RLABELS[role],time:nowDT()});
-  DB.transaksi.push({id:'TRX'+Date.now(),type:'masuk',skuId:id,skuNama:s.nama,qty,sumber,catatan,by:RLABELS[role],time:nowDT(),date:today()});
+  const trx={id:uid('TRX'),type:'masuk',skuId:id,skuNama:s.nama,qty,sumber,catatan,by:RLABELS[role],time:nowDT(),date:today()};
+  DB.transaksi.push(trx);
   saveDB();
   closeModal('modal-masuk');
   ['masuk-sumber','masuk-catatan'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('masuk-qty').value=1;
   addActivity('Masuk: '+s.nama+' +'+qty+' '+s.satuan,'success');
   renderStok(); renderDashboard();
-  if(DB.driveUrl) syncToDrive();
+  enqueue({type:'sku_upsert', sku:skuRow(s)});
+  enqueue({type:'trx_append', trx:trx});
   toast('✅ +'+qty+' masuk — stok kini '+s.stok);
 }
-
+ 
 function prosesKeluar(){
   const id=document.getElementById('keluar-sku').value;
   const qty=parseInt(document.getElementById('keluar-qty').value)||0;
@@ -764,18 +889,20 @@ function prosesKeluar(){
   s.stok-=qty;
   s.history=s.history||[];
   s.history.unshift({type:'keluar',qty,note:(cust||'')+(cat?' — '+cat:''),by:RLABELS[role],time:nowDT()});
-  DB.transaksi.push({id:'TRX'+Date.now(),type:'keluar',skuId:id,skuNama:s.nama,qty,customer:cust,catatan:cat,by:RLABELS[role],time:nowDT(),date:today()});
+  const trx={id:uid('TRX'),type:'keluar',skuId:id,skuNama:s.nama,qty,customer:cust,catatan:cat,by:RLABELS[role],time:nowDT(),date:today()};
+  DB.transaksi.push(trx);
   saveDB();
   closeModal('modal-keluar');
   ['keluar-customer','keluar-catatan'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('keluar-qty').value=1;
   addActivity('Keluar: '+s.nama+' −'+qty+' → '+(cust||'?'),'info');
   renderStok(); renderDashboard();
-  if(DB.driveUrl) syncToDrive();
+  enqueue({type:'sku_upsert', sku:skuRow(s)});
+  enqueue({type:'trx_append', trx:trx});
   const warn=s.stok<=s.min?' ⚠️ Stok menipis!':'';
   toast('✅ −'+qty+' keluar. Sisa: '+s.stok+warn);
 }
-
+ 
 function renderTrx(){
   const items=DB.transaksi.filter(t=>t.date===today()).slice().reverse();
   const el=document.getElementById('trx-list');
@@ -792,7 +919,7 @@ function renderTrx(){
     </div>
   </div>`).join('');
 }
-
+ 
 // ==================== ORDER ====================
 function buatOrder(){
   const cust=(document.getElementById('ord-customer').value||'').trim();
@@ -800,24 +927,25 @@ function buatOrder(){
   const barang=(document.getElementById('ord-barang').value||'').trim();
   const cat=(document.getElementById('ord-catatan').value||'').trim();
   if(!cust||!barang){toast('⚠️ Customer dan barang wajib diisi');return;}
-  const oid='ORD-'+String(DB.order.length+1).padStart(3,'0');
-  DB.order.push({id:oid,customer:cust,kota,barang,catatan:cat,status:'pending',by:RLABELS[role],date:today(),time:nowDT()});
+  const oid=uid('ORD-');
+  const o={id:oid,customer:cust,kota,barang,catatan:cat,status:'pending',by:RLABELS[role],date:today(),time:nowDT()};
+  DB.order.push(o);
   saveDB();
   closeModal('modal-order');
   ['ord-customer','ord-kota','ord-barang','ord-catatan'].forEach(i=>document.getElementById(i).value='');
   addActivity('Order baru: '+oid+' — '+cust,'info');
   renderOrder(orderFilter); renderDashboard();
-  if(DB.driveUrl) syncToDrive();
+  enqueue({type:'order_upsert', order:o});
   toast('✅ Order '+oid+' dibuat');
 }
-
+ 
 function filterOrder(f,el){
   orderFilter=f;
   document.querySelectorAll('#page-order .btn-outline').forEach(b=>{ b.style.background=''; b.style.color='var(--blue)'; });
   if(el){ el.style.background='var(--blue)'; el.style.color='#fff'; }
   renderOrder(f);
 }
-
+ 
 function renderOrder(f){
   let items=DB.order.slice().reverse();
   if(f!=='semua') items=items.filter(o=>o.status===f);
@@ -836,7 +964,7 @@ function renderOrder(f){
     </div>`;
   }).join('');
 }
-
+ 
 function showDetailOrder(id){
   const o=DB.order.find(x=>x.id===id); if(!o) return;
   document.getElementById('do-id').textContent=o.id;
@@ -858,7 +986,7 @@ function showDetailOrder(id){
   acts.innerHTML=btns;
   openModal('modal-detail-order');
 }
-
+ 
 function updateOrder(id,status){
   const o=DB.order.find(x=>x.id===id); if(!o) return;
   o.status=status;
@@ -867,17 +995,17 @@ function updateOrder(id,status){
   const lb={diproses:'Diproses',selesai:'Selesai'}[status];
   addActivity('Order '+id+' → '+lb+' oleh '+RLABELS[role],'success');
   renderOrder(orderFilter); renderDashboard();
-  if(DB.driveUrl) syncToDrive();
+  enqueue({type:'order_upsert', order:o});
   toast('✅ Order '+id+' → '+lb);
 }
-
+ 
 // ==================== DASHBOARD ====================
 function addActivity(text,type){
   DB.activity.unshift({text,type,time:nowDT(),date:today()});
   if(DB.activity.length>100) DB.activity=DB.activity.slice(0,100);
   saveDB(); renderDashboard();
 }
-
+ 
 function renderDashboard(){
   const t=today();
   document.getElementById('st-sku').textContent=DB.sku.length;
@@ -889,15 +1017,19 @@ function renderDashboard(){
   aEl.innerHTML=acts.length?acts.slice(0,8).map(a=>`<div class="log-item"><div class="log-time">${a.time}</div><div class="log-text">${a.text}</div></div>`).join(''):'<div class="alert alert-info">Belum ada aktivitas hari ini.</div>';
   const lowItems=DB.sku.filter(s=>s.stok<=s.min);
   const lc=document.getElementById('low-card');
-  if(lowItems.length){ lc.style.display='block'; document.getElementById('low-list').innerHTML=lowItems.map(s=>`<div class="stock-row"><span class="stock-key">${s.nama}</span><span class="stock-val" style="color:var(--red)">${s.stok}/${s.min} ${s.satuan}</span></div>`).join(''); }
+  if(lowItems.length){ lc.style.display='block'; document.getElementById('low-list').innerHTML=lowItems.slice(0,30).map(s=>`<div class="stock-row"><span class="stock-key">${s.nama}</span><span class="stock-val" style="color:var(--red)">${s.stok}/${s.min} ${s.satuan}</span></div>`).join(''); }
   else lc.style.display='none';
-  // Drive banner
   const db=document.getElementById('drive-banner');
-  if(DB.driveUrl) db.innerHTML='<div class="alert alert-success" style="margin-bottom:12px">🔗 Drive Sync Aktif — data tersimpan di Google Sheet RKT</div>';
+  if(DB.driveUrl){
+    const pend=DB.outbox.length;
+    db.innerHTML=pend
+      ?'<div class="alert alert-warn" style="margin-bottom:12px">⏳ '+pend+' data menunggu sinkron ke Google Sheet. <a onclick="processOutbox(true)" style="color:var(--amber);font-weight:700;cursor:pointer">Kirim sekarang →</a></div>'
+      :'<div class="alert alert-success" style="margin-bottom:12px">🔗 Drive Sync Aktif — semua data tersinkron ke Google Sheet RKT</div>';
+  }
   else if(role==='manager') db.innerHTML='<div class="alert alert-warn" style="margin-bottom:12px">⚠️ Drive Sync belum aktif — data hanya tersimpan di HP ini. <a onclick="goPage(\'laporan\',document.getElementById(\'nav-laporan\'))" style="color:var(--amber);font-weight:700;cursor:pointer">Setup sekarang →</a></div>';
   else db.innerHTML='';
 }
-
+ 
 // ==================== LAPORAN ====================
 function renderLaporan(){
   const t=today();
@@ -916,10 +1048,10 @@ function renderLaporan(){
   const canH=CAN_HARGA.includes(role);
   const sEl=document.getElementById('l-stok');
   if(!DB.sku.length) sEl.innerHTML='<div class="alert alert-info">Belum ada SKU terdaftar.</div>';
-  else sEl.innerHTML=DB.sku.map(s=>`<div class="stock-row"><span class="stock-key">${s.nama} <span style="color:var(--text-muted);font-size:11px">${s.kode}</span>${canH&&s.harga?' <span style="color:var(--amber);font-size:11px">Rp '+s.harga.toLocaleString('id-ID')+'</span>':''}</span><span class="stock-val" style="color:${s.stok<=s.min?'var(--red)':'var(--text)'}">${s.stok} ${s.satuan}</span></div>`).join('');
+  else sEl.innerHTML=DB.sku.slice(0,300).map(s=>`<div class="stock-row"><span class="stock-key">${s.nama} <span style="color:var(--text-muted);font-size:11px">${s.kode}</span>${canH&&s.harga?' <span style="color:var(--amber);font-size:11px">Rp '+s.harga.toLocaleString('id-ID')+'</span>':''}</span><span class="stock-val" style="color:${s.stok<=s.min?'var(--red)':'var(--text)'}">${s.stok} ${s.satuan}</span></div>`).join('')+(DB.sku.length>300?'<div class="alert alert-info">Menampilkan 300 dari '+DB.sku.length+' SKU.</div>':'');
   renderDriveStatus();
 }
-
+ 
 function exportLaporan(){
   const t=today();
   const d=new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -928,199 +1060,345 @@ function exportLaporan(){
   let txt='📦 LAPORAN HARIAN GUDANGKU — RKT\n'+d+'\n\n';
   txt+='📥 Barang Masuk: '+masuk.reduce((a,x)=>a+x.qty,0)+' item\n';
   txt+='📤 Barang Keluar: '+keluar.reduce((a,x)=>a+x.qty,0)+' item\n\n';
-  txt+='STOK SKU:\n';
-  DB.sku.forEach(s=>{ txt+='• '+s.nama+' ('+s.kode+'): '+s.stok+' '+s.satuan+(s.stok<=s.min?' ⚠️':'')+'\n'; });
   const low=DB.sku.filter(s=>s.stok<=s.min);
-  if(low.length){ txt+='\n⚠️ STOK MENIPIS:\n'; low.forEach(s=>{ txt+='• '+s.nama+': '+s.stok+'/'+s.min+' '+s.satuan+'\n'; }); }
+  if(masuk.length){ txt+='DETAIL MASUK:\n'; masuk.forEach(x=>{ txt+='• '+x.skuNama+' +'+x.qty+' ('+(x.sumber||'-')+')\n'; }); txt+='\n'; }
+  if(keluar.length){ txt+='DETAIL KELUAR:\n'; keluar.forEach(x=>{ txt+='• '+x.skuNama+' −'+x.qty+' → '+(x.customer||'-')+'\n'; }); txt+='\n'; }
+  if(low.length){ txt+='⚠️ STOK MENIPIS ('+low.length+' SKU):\n'; low.slice(0,40).forEach(s=>{ txt+='• '+s.nama+': '+s.stok+'/'+s.min+' '+s.satuan+'\n'; }); }
   try{ navigator.clipboard.writeText(txt); toast('📋 Laporan disalin! Paste ke WhatsApp'); }
   catch(e){ toast('⚠️ Salin gagal — coba manual'); }
 }
-
-// ==================== GOOGLE DRIVE SYNC ====================
-// Kirim via fetch GET no-cors — tidak ada CORS issue dari GitHub Pages
-
-const SCRIPT_CODE = `// GudangKu Sync — RKT v7
+ 
+// ==================== GOOGLE APPS SCRIPT CODE (v8) ====================
+const SCRIPT_CODE = `// GudangKu Sync — RKT v8 (POST body + kolom by-nama-header + anti duplikat + lock)
 var SPREADSHEET_ID = '1t7G-ssbxWuwrH7aJ5c8jCm9VvnKJIU2P60cMJdN16lM';
-
+var SKU_HEADERS = ['Kode','Nama','Kategori','Supplier','Harga','Zona','Lokasi','Stok','Min','Satuan','Update'];
+var TRX_HEADERS = ['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu'];
+var ORD_HEADERS = ['ID','Customer','Kota','Barang','Status','Oleh','Tanggal','Catatan'];
+ 
 function doGet(e) {
+  var type = (e && e.parameter && e.parameter.type) || 'ping';
+  if (type === 'read') return readSKU();
+  return json({ ok: true, msg: 'ping ok v8' });
+}
+ 
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(25000); } catch(le) { return json({ ok:false, error:'busy' }); }
   try {
-    var type = (e.parameter && e.parameter.type) || 'ping';
-
-    // READ — kembalikan data SKU ke aplikasi
-    if (type === 'read') {
-      var ss  = SpreadsheetApp.openById(SPREADSHEET_ID);
-      var sku = sheetToObjects(ss, 'SKU');
-      var out = sku.map(function(r, i) {
-        return {
-          id: i + 1,
-          kode:   String(r['Kode']   || ''),
-          nama:   String(r['Nama']   || ''),
-          harga:  parseFloat(r['Harga'])  || 0,
-          zona:   String(r['Zona']   || 'MM'),
-          lokasi: String(r['Lokasi'] || ''),
-          stok:   parseInt(r['Stok'])    || 0,
-          min:    parseInt(r['Min'])     || 5,
-          satuan: String(r['Satuan'] || 'pcs'),
-          history: []
-        };
-      }).filter(function(s) { return s.nama; });
-      return json({ ok: true, sku: out });
-    }
-
-    // WRITE — terima data dari aplikasi
-    var payload = JSON.parse(decodeURIComponent(e.parameter.data || '{}'));
-    var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var body = JSON.parse(e.postData.contents);
+    var type = body.type || 'ping';
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     var now = new Date().toLocaleString('id-ID');
-
-    if (type === 'sku_batch') {
-      var sh = ss2.getSheetByName('SKU') || ss2.insertSheet('SKU');
-      if (payload.batchIndex === 0) {
-        sh.clearContents();
-        sh.appendRow(['Kode','Nama','Harga','Zona','Lokasi','Stok','Min','Satuan','Update']);
+ 
+    if (type === 'sku_upsert') {
+      var sh = getSheet(ss, 'SKU', SKU_HEADERS);
+      var col = headerMap(sh);
+      var s = body.sku;
+      var kodes = sh.getRange(2, col['Kode'], Math.max(1, sh.getLastRow()-1), 1).getValues();
+      var rowIdx = -1;
+      for (var i = 0; i < kodes.length; i++) {
+        if (String(kodes[i][0]) === String(s.kode)) { rowIdx = i + 2; break; }
       }
-      (payload.sku || []).forEach(function(s) {
-        sh.appendRow([s.kode,s.nama,s.harga||0,s.zona,s.lokasi||'',s.stok,s.min,s.satuan,now]);
-      });
-      return ok('batch ' + payload.batchIndex + ' ok');
+      var rowVals = [s.kode, s.nama, s.kategori||'', s.supplier||'', s.harga||0, s.zona||'MM', s.lokasi||'', s.stok||0, s.min||5, s.satuan||'pcs', now];
+      if (rowIdx === -1) { sh.appendRow(rowVals); }
+      else { sh.getRange(rowIdx, 1, 1, rowVals.length).setValues([rowVals]); }
+      return json({ ok:true, msg:'sku_upsert ' + s.kode });
     }
-
-    if (type === 'trx_order') {
-      var trxSh = ss2.getSheetByName('Transaksi') || ss2.insertSheet('Transaksi');
-      trxSh.clearContents();
-      trxSh.appendRow(['ID','Tipe','Barang','Qty','Oleh','Tanggal','Waktu']);
-      (payload.transaksi || []).forEach(function(t) {
-        trxSh.appendRow([t.id,t.type,t.skuNama,t.qty,t.by,t.date,t.time]);
-      });
-      var ordSh = ss2.getSheetByName('Order') || ss2.insertSheet('Order');
-      ordSh.clearContents();
-      ordSh.appendRow(['ID','Customer','Kota','Barang','Status','Oleh','Tanggal']);
-      (payload.order || []).forEach(function(o) {
-        ordSh.appendRow([o.id,o.customer,o.kota||'',o.barang,o.status,o.by,o.date]);
-      });
-      return ok('trx+order ok');
+ 
+    if (type === 'trx_append') {
+      var t = body.trx || {};
+      var sh2 = getSheet(ss, 'Transaksi', TRX_HEADERS);
+      // Anti-duplikat: cek ID di 300 baris terakhir
+      var last = sh2.getLastRow();
+      if (last > 1) {
+        var start = Math.max(2, last - 300);
+        var ids = sh2.getRange(start, 1, last - start + 1, 1).getValues();
+        for (var j = 0; j < ids.length; j++) {
+          if (String(ids[j][0]) === String(t.id)) return json({ ok:true, msg:'trx dup skip' });
+        }
+      }
+      sh2.appendRow([t.id, t.type, t.skuNama, t.qty, t.by, t.date, t.time]);
+      return json({ ok:true, msg:'trx_append ' + t.id });
     }
-
-    return ok('ping ok');
-
+ 
+    if (type === 'order_upsert') {
+      var o = body.order || {};
+      var sh3 = getSheet(ss, 'Order', ORD_HEADERS);
+      var last3 = sh3.getLastRow();
+      var rowIdx3 = -1;
+      if (last3 > 1) {
+        var oids = sh3.getRange(2, 1, last3 - 1, 1).getValues();
+        for (var k = 0; k < oids.length; k++) {
+          if (String(oids[k][0]) === String(o.id)) { rowIdx3 = k + 2; break; }
+        }
+      }
+      var oVals = [o.id, o.customer, o.kota||'', o.barang, o.status, o.by, o.date, o.catatan||''];
+      if (rowIdx3 === -1) { sh3.appendRow(oVals); }
+      else { sh3.getRange(rowIdx3, 1, 1, oVals.length).setValues([oVals]); }
+      return json({ ok:true, msg:'order_upsert ' + o.id });
+    }
+ 
+    if (type === 'sku_batch') {
+      var sh4 = getSheet(ss, 'SKU', SKU_HEADERS);
+      if (body.batchIndex === 0) {
+        sh4.clearContents();
+        sh4.appendRow(SKU_HEADERS);
+      }
+      var rows = (body.sku || []).map(function(s) {
+        return [s.kode, s.nama, s.kategori||'', s.supplier||'', s.harga||0, s.zona||'MM', s.lokasi||'', s.stok||0, s.min||5, s.satuan||'pcs', now];
+      });
+      if (rows.length) sh4.getRange(sh4.getLastRow()+1, 1, rows.length, SKU_HEADERS.length).setValues(rows);
+      return json({ ok:true, msg:'sku_batch ' + body.batchIndex + ' (' + rows.length + ' rows)' });
+    }
+ 
+    return json({ ok:true, msg:'ping ok' });
   } catch(err) {
-    return ok('error: ' + err.message);
+    return json({ ok:false, error: String(err && err.message || err) });
+  } finally {
+    lock.releaseLock();
   }
 }
-
-function doPost(e) { return doGet(e); }
-
-function sheetToObjects(ss, name) {
-  var sh = ss.getSheetByName(name);
-  if (!sh) return [];
+ 
+function readSKU() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sh = ss.getSheetByName('SKU');
+  if (!sh || sh.getLastRow() < 2) return json({ ok:true, sku: [] });
   var data = sh.getDataRange().getValues();
-  if (data.length < 2) return [];
   var headers = data[0];
-  return data.slice(1).map(function(row) {
-    var obj = {};
-    headers.forEach(function(h, i) { obj[h] = row[i]; });
-    return obj;
-  });
+  var idx = {};
+  headers.forEach(function(h, i) { idx[String(h)] = i; });
+  var out = [];
+  for (var r = 1; r < data.length; r++) {
+    var row = data[r];
+    var nama = String(row[idx['Nama']] || '');
+    if (!nama) continue;
+    out.push({
+      id: r,
+      kode:     String(row[idx['Kode']]     || ''),
+      nama:     nama,
+      kategori: String(row[idx['Kategori']] || ''),
+      supplier: String(row[idx['Supplier']] || ''),
+      harga:    parseFloat(row[idx['Harga']])  || 0,
+      zona:     String(row[idx['Zona']]     || 'MM'),
+      lokasi:   String(row[idx['Lokasi']]   || ''),
+      stok:     parseInt(row[idx['Stok']])  || 0,
+      min:      parseInt(row[idx['Min']])   || 5,
+      satuan:   String(row[idx['Satuan']]   || 'pcs'),
+      history: []
+    });
+  }
+  return json({ ok:true, sku: out });
 }
-
-function ok(msg) {
-  return ContentService.createTextOutput(msg)
-    .setMimeType(ContentService.MimeType.TEXT);
+ 
+function getSheet(ss, name, headers) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); }
+  else if (sh.getLastRow() === 0) { sh.appendRow(headers); }
+  return sh;
 }
-
+ 
+function headerMap(sh) {
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var map = {};
+  headers.forEach(function(h, i) { map[String(h)] = i + 1; });
+  return map;
+}
+ 
 function json(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }`;
-
+ 
 document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('apps-script-code').textContent = SCRIPT_CODE;
+  const el=document.getElementById('apps-script-code');
+  if(el) el.textContent = SCRIPT_CODE;
 });
-
+ 
 function copyScript(){
-  try{ navigator.clipboard.writeText(SCRIPT_CODE); toast('📋 Kode disalin!'); }
+  try{ navigator.clipboard.writeText(SCRIPT_CODE); toast('📋 Kode v8 disalin!'); }
   catch(e){ toast('⚠️ Salin gagal'); }
 }
-
-// ==================== DRIVE SYNC via hidden form+iframe ====================
-// Kirim via fetch GET — paling simpel, tidak ada CORS issue dari GitHub Pages
-// Data dikirim sebagai URL parameter, batch per 50 SKU kalau banyak
-
-function gaSend(url, payload, onDone){
-  // Pisah 'type' ke URL param tersendiri, data sisanya
-  const type = payload.type || 'ping';
-  const dataObj = Object.assign({}, payload);
-  delete dataObj.type;
-  const fullUrl = url + '?type=' + type + '&data=' + encodeURIComponent(JSON.stringify(dataObj));
-  fetch(fullUrl, { method:'GET', mode:'no-cors' })
-    .then(function(){ if(onDone) onDone(true); })
-    .catch(function(){ if(onDone) onDone(false); });
+ 
+// ==================== SYNC ENGINE (outbox + POST + retry) ====================
+// Semua tulis pakai POST text/plain (simple request → tanpa preflight CORS,
+// respons Apps Script bisa dibaca → konfirmasi sukses BENERAN, bukan asumsi).
+// Setiap perubahan masuk antrian (outbox) di localStorage → dikirim berurutan →
+// baru dihapus dari antrian kalau server balas ok:true. Internet putus? Antri, coba lagi.
+ 
+let syncing = false;
+ 
+function enqueue(op){
+  if(!DB.driveUrl) return;
+  op._id = uid('OP');
+  op._t = Date.now();
+  DB.outbox.push(op);
+  saveDB();
+  updateSyncBadge();
+  processOutbox();
 }
-
+ 
+function enqueueFullSkuPush(){
+  if(!DB.driveUrl) return;
+  const BATCH = 150;
+  const total = Math.ceil(Math.max(1, DB.sku.length) / BATCH);
+  for(let i=0; i<Math.max(1,DB.sku.length); i+=BATCH){
+    const idx = Math.floor(i/BATCH);
+    enqueueRaw({type:'sku_batch', batchIndex:idx, totalBatches:total, sku:DB.sku.slice(i,i+BATCH).map(skuRow)});
+  }
+  processOutbox();
+}
+function enqueueRaw(op){ op._id=uid('OP'); op._t=Date.now(); DB.outbox.push(op); saveDB(); updateSyncBadge(); }
+ 
+function postOp(url, op){
+  const body = Object.assign({}, op);
+  delete body._id; delete body._t;
+  return fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(body),
+    redirect:'follow'
+  }).then(r=>r.text()).then(txt=>{
+    try{ const j=JSON.parse(txt); return !!(j && j.ok); }
+    catch(e){ return false; }
+  });
+}
+ 
+function processOutbox(manual){
+  if(syncing) { if(manual) toast('🔄 Sedang sinkron...'); return; }
+  if(!DB.driveUrl || !DB.outbox.length){ if(manual) toast('✅ Tidak ada antrian — semua tersinkron'); updateSyncBadge(); return; }
+  if(!navigator.onLine){ if(manual) toast('⚠️ Tidak ada internet — akan dikirim otomatis saat online'); return; }
+  syncing = true;
+  updateSyncBadge();
+ 
+  function next(){
+    if(!DB.outbox.length){
+      syncing=false; updateSyncBadge(); renderDashboard();
+      if(manual) toast('✅ Semua data tersinkron ke Google Sheet');
+      return;
+    }
+    const op = DB.outbox[0];
+    postOp(DB.driveUrl, op).then(ok=>{
+      if(ok){
+        DB.outbox.shift();
+        saveDB(); updateSyncBadge();
+        setTimeout(next, 250);
+      } else {
+        // Gagal — berhenti, biarkan antri. Retry via interval / online event / manual.
+        syncing=false; updateSyncBadge(); renderDashboard();
+        if(manual) toast('⚠️ Gagal kirim ke Sheet — cek koneksi / Apps Script. Data AMAN di antrian.');
+      }
+    }).catch(()=>{
+      syncing=false; updateSyncBadge(); renderDashboard();
+      if(manual) toast('⚠️ Gagal terhubung — data AMAN di antrian, akan dicoba lagi');
+    });
+  }
+  next();
+}
+ 
+function updateSyncBadge(){
+  const el=document.getElementById('sync-badge');
+  if(!el) return;
+  const n=DB.outbox.length;
+  if(!DB.driveUrl){ el.style.display='none'; return; }
+  el.style.display='inline-block';
+  if(syncing){ el.textContent='🔄 sinkron...'; el.style.background='rgba(255,255,255,.25)'; }
+  else if(n>0){ el.textContent='⏳ '+n+' antri'; el.style.background='rgba(196,122,26,.85)'; }
+  else { el.textContent='✅ sinkron'; el.style.background='rgba(26,138,74,.7)'; }
+}
+ 
+// Retry otomatis: saat online kembali + tiap 45 detik
+window.addEventListener('online', ()=>{ toast('📶 Online kembali — mengirim antrian...'); processOutbox(); });
+setInterval(()=>{ if(DB.outbox.length && !syncing) processOutbox(); }, 45000);
+ 
 function saveDriveUrl(){
   const url=(document.getElementById('drive-url-input').value||'').trim();
   if(!url||!url.includes('script.google.com')){ toast('⚠️ URL tidak valid'); return; }
-  DB.driveUrl=url; saveDB();
+  DB.driveUrl=url; DB.urlVer=URL_VER; saveDB();
   const res=document.getElementById('drive-test-result');
-  res.innerHTML='<div class="alert alert-info">🔄 Mengirim ke Google Sheet...</div>';
-  syncToDrive(function(ok){
-    if(ok){
-      res.innerHTML='<div class="alert alert-success">✅ Request terkirim! Buka Google Sheet — cek apakah tab SKU/Transaksi/Order muncul dalam 10 detik.</div>';
+  res.innerHTML='<div class="alert alert-info">🔄 Test koneksi (baca + tulis)...</div>';
+  // Test 1: read
+  fetch(url + '?type=read').then(r=>r.json()).then(data=>{
+    if(!(data&&data.ok)) throw new Error('read gagal');
+    // Test 2: write ping
+    return postOp(url, {type:'ping'});
+  }).then(okWrite=>{
+    if(okWrite){
+      res.innerHTML='<div class="alert alert-success">✅ Koneksi OK — baca dan tulis ke Google Sheet berfungsi. Sync aktif.</div>';
+      processOutbox();
     } else {
-      res.innerHTML='<div class="alert alert-error">❌ Gagal mengirim. Pastikan internet tersambung.</div>';
+      res.innerHTML='<div class="alert alert-warn">⚠️ BACA berhasil tapi TULIS gagal. Kemungkinan Apps Script masih versi lama — paste kode v8 dan deploy ulang (Manage deployments → New version).</div>';
     }
-    renderDashboard();
+    renderDriveStatus(); renderDashboard();
+  }).catch(()=>{
+    res.innerHTML='<div class="alert alert-error">❌ Tidak bisa terhubung. Cek: (1) URL benar, (2) deployment akses "Anyone", (3) internet.</div>';
   });
 }
-
-function syncToDrive(onDone){
-  if(!DB.driveUrl||DB.driveUrl.trim()==='') return;
-  const url = DB.driveUrl;
-
-  // Kirim SKU dalam batch @50 supaya URL tidak terlalu panjang
-  const BATCH = 50;
-  const skuBatches = [];
-  for(let i=0; i<Math.max(1,DB.sku.length); i+=BATCH){
-    skuBatches.push(DB.sku.slice(i, i+BATCH));
-  }
-
-  let batchIdx = 0;
-  function sendNext(){
-    if(batchIdx >= skuBatches.length){
-      // Setelah semua SKU, kirim transaksi + order
-      const trxPayload = {
-        type: 'trx_order',
-        transaksi: DB.transaksi.slice(-200),
-        order: DB.order
-      };
-      gaSend(url, trxPayload, function(){ if(onDone) onDone(true); });
-      return;
-    }
-    const payload = {
-      type: 'sku_batch',
-      batchIndex: batchIdx,
-      totalBatches: skuBatches.length,
-      sku: skuBatches[batchIdx]
-    };
-    gaSend(url, payload, function(){
-      batchIdx++;
-      setTimeout(sendNext, 300); // jeda kecil antar batch
-    });
-  }
-  sendNext();
-}
-
+ 
 function renderDriveStatus(){
   const el=document.getElementById('drive-status-card');
   if(!el) return;
   if(DB.driveUrl){
-    el.innerHTML=`<div class="stock-row"><span class="stock-key">Status</span><span class="badge badge-green">Aktif</span></div>
+    const pend=DB.outbox.length;
+    el.innerHTML=`<div class="stock-row"><span class="stock-key">Status</span><span class="badge ${pend?'badge-amber':'badge-green'}">${pend?('⏳ '+pend+' antri'):'✅ Tersinkron'}</span></div>
     <div class="stock-row"><span class="stock-key">URL</span><span class="stock-val" style="font-size:11px;word-break:break-all">${DB.driveUrl.slice(0,60)}...</span></div>
-    <button class="btn btn-success btn-sm" onclick="syncToDrive();toast('🔄 Sync dikirim ke Google Sheet!')" style="margin-top:8px">🔄 Sync Sekarang</button>`;
+    <button class="btn btn-success btn-sm" onclick="processOutbox(true)" style="margin-top:8px">🔄 Kirim Antrian Sekarang</button>
+    <button class="btn btn-outline btn-sm" onclick="enqueueFullSkuPush();toast('📤 Push penuh semua SKU diantrikan')" style="margin-top:8px;margin-left:6px">📤 Push Penuh SKU</button>`;
   } else {
     el.innerHTML='<div class="alert alert-warn">Belum terhubung ke Google Drive.</div>';
   }
 }
-
+ 
+// ==================== PULL FROM DRIVE ====================
+// Sheet = sumber kebenaran, TAPI: jangan pernah timpa data lokal
+// selama masih ada antrian yang belum terkirim (mencegah data input hilang).
+function safePull(){
+  if(!DB.driveUrl) return;
+  if(DB.outbox.length){
+    toast('⏳ Ada '+DB.outbox.length+' data belum terkirim — kirim dulu sebelum tarik data');
+    // Kirim antrian; kalau sukses semua, baru pull
+    if(!syncing){
+      const wasLen = DB.outbox.length;
+      processOutbox();
+      const check = setInterval(()=>{
+        if(!syncing && !DB.outbox.length){ clearInterval(check); doPull(); }
+        else if(!syncing && DB.outbox.length){ clearInterval(check); /* gagal kirim — jangan pull, data lokal aman */ }
+      }, 800);
+    }
+    return;
+  }
+  doPull();
+}
+ 
+function manualRefresh(){
+  if(DB.outbox.length){ safePull(); return; }
+  toast('🔄 Mengambil data terbaru...');
+  doPull(true);
+}
+ 
+function doPull(showToast){
+  if(!DB.driveUrl) return;
+  fetch(DB.driveUrl + '?type=read', { method:'GET' })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data && data.ok && data.sku && data.sku.length > 0){
+        // Pertahankan riwayat mutasi lokal per kode
+        const histMap={};
+        DB.sku.forEach(s=>{ if(s.history&&s.history.length) histMap[s.kode]=s.history; });
+        data.sku.forEach(s=>{ if(histMap[s.kode]) s.history=histMap[s.kode]; });
+        DB.sku = data.sku;
+        saveDB();
+        renderAll();
+        if(showToast) toast('✅ '+data.sku.length+' SKU diperbarui dari Google Sheet');
+        else toast('✅ '+data.sku.length+' SKU dimuat dari Google Sheet');
+      } else if(data && data.ok){
+        if(showToast) toast('ℹ️ Google Sheet belum ada data SKU');
+      } else {
+        if(showToast) toast('⚠️ Respons Sheet tidak dikenal — pakai data lokal');
+      }
+    })
+    .catch(()=>{ if(showToast) toast('⚠️ Gagal terhubung — pakai data lokal'); });
+}
+ 
 // ==================== RESET ====================
 function doResetSKU(){
   const val=document.getElementById('confirm-reset-sku').value.trim();
@@ -1132,53 +1410,27 @@ function doResetSKU(){
   document.getElementById('confirm-reset-sku').value='';
   addActivity('Reset SKU: '+jumlah+' barang dihapus oleh '+RLABELS[role],'info');
   renderStok(); renderDashboard();
-  toast('✅ '+jumlah+' SKU dihapus. Siap import ulang.');
+  toast('✅ '+jumlah+' SKU dihapus di HP ini. Import ulang lalu data Sheet akan ikut diganti.');
 }
-
+ 
 function doResetAll(){
   const val=document.getElementById('confirm-reset-all').value.trim();
   if(val!=='HAPUS SEMUA'){toast('⚠️ Ketik HAPUS SEMUA dengan huruf besar');return;}
   const driveUrl=DB.driveUrl;
-  DB={ sku:[], transaksi:[], order:[], activity:[], driveUrl };
+  DB={ sku:[], transaksi:[], order:[], activity:[], outbox:[], driveUrl };
   saveDB();
   closeModal('modal-reset-all');
   document.getElementById('confirm-reset-all').value='';
   renderAll();
-  toast('✅ Semua data direset. Aplikasi bersih.');
+  toast('✅ Semua data di HP ini direset. Data Google Sheet TIDAK dihapus.');
 }
-
-// ==================== PULL FROM DRIVE ====================
-// Google Sheet = sumber kebenaran. Pull saat login dan saat refresh manual.
-function manualRefresh(){
-  toast('🔄 Mengambil data terbaru...');
-  pullFromDrive(function(ok, val){
-    if(ok) toast('✅ ' + val + ' SKU diperbarui dari Google Sheet');
-    else if(val==='empty') toast('ℹ️ Google Sheet belum ada data SKU');
-    else toast('⚠️ Gagal terhubung — cek koneksi internet');
-  });
-}
-function pullFromDrive(onDone){
-  if(!DB.driveUrl) { if(onDone) onDone(false,'no_url'); return; }
-  fetch(DB.driveUrl + '?type=read', { method:'GET' })
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if(data && data.ok && data.sku && data.sku.length > 0){
-        DB.sku = data.sku;
-        saveDB();
-        renderAll();
-        if(onDone) onDone(true, data.sku.length);
-      } else {
-        if(onDone) onDone(false,'empty');
-      }
-    })
-    .catch(function(){ if(onDone) onDone(false,'error'); });
-}
-
-// ==================== RENDER ALL ====================
+ 
+// ==================== RENDER ALL & BOOT ====================
 function renderAll(){ renderDashboard(); renderStok(); renderTrx(); renderOrder(orderFilter); }
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),3000); }
-
+ 
 loadDB();
+restoreSession(); // reload tidak lagi logout — session tersimpan sampai user tekan Keluar
 </script>
 </body>
 </html>
